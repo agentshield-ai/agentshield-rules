@@ -1,0 +1,70 @@
+id: agent-prompt-injection-indirect-001
+title: Indirect Prompt Injection in Retrieved Content
+description: |
+  Detects indirect prompt injection markers in content retrieved by AI agents
+  from external sources. These hidden instructions attempt to manipulate agent
+  behavior through CSS hiding, Unicode smuggling, and system prompt markers.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: high
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.defense_evasion
+  - attack.t1564
+detection:
+  selection_css_hiding:
+    event_type: content_retrieval
+    content|contains:
+      - 'color:white'
+      - 'color:#ffffff'
+      - 'color:#fff'
+      - 'font-size:0'
+      - 'font-size: 0'
+      - 'display:none'
+      - 'display: none'
+      - 'visibility:hidden'
+      - 'opacity:0'
+  selection_unicode_smuggling:
+    event_type: content_retrieval
+    content|contains:
+      - '\ue0000'
+      - '\ue007f'
+      - '\u202a'
+      - '\u202b'
+      - '\u202c'
+      - '\u202d'
+      - '\u202e'
+      - '\u200d'
+      - '\ufeff'
+      - '\u200b'
+  selection_instruction_markers:
+    event_type: content_retrieval
+    content|contains:
+      - 'IMPORTANT NEW INSTRUCTIONS'
+      - 'END INSTRUCTIONS'
+      - 'SYSTEM INSTRUCTIONS'
+      - '<|im_start|>system'
+      - '<|system|>'
+      - '### SYSTEM'
+      - '---INSTRUCTIONS---'
+      - 'IGNORE ABOVE'
+  selection_llm_tokens:
+    event_type: content_retrieval
+    content|contains:
+      - '<|endoftext|>'
+      - '<|startoftext|>'
+      - '[INST]'
+      - '[/INST]'
+      - '<s>'
+      - '</s>'
+  condition: selection_css_hiding or selection_unicode_smuggling or selection_instruction_markers or selection_llm_tokens
+falsepositives:
+  - Legitimate CSS styling in retrieved web content
+  - Unicode characters used for proper text formatting
+  - Documentation about LLM tokens and instruction formats
+level: high

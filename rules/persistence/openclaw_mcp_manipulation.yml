@@ -1,0 +1,83 @@
+id: openclaw-mcp-manipulation-001
+title: OpenClaw MCP Configuration Tampering
+description: |
+  Detects unauthorized modifications to OpenClaw MCP configuration files
+  and plugin installations from untrusted sources that could compromise
+  the security and integrity of the OpenClaw environment.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: openclaw
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.persistence
+  - attack.t1547
+  - attack.defense_evasion
+  - attack.t1112
+  - openclaw
+detection:
+  selection_openclaw_config:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '~/.openclaw/openclaw.json'
+  selection_config_plugin_modification:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: 'openclaw.json'
+    content|contains:
+      - '"plugins":'
+      - '"mcpServers":'
+      - '"skills":'
+  selection_untrusted_plugin_install:
+    source: openclaw
+    event_type: plugin_installation
+    source_url|not|contains:
+      - 'github.com/openclaw-official'
+      - 'official.openclaw.org'
+      - 'openclaw.ai/plugins'
+  selection_dangerous_plugin_permissions:
+    source: openclaw
+    event_type: plugin_configuration
+    permissions|contains:
+      - 'filesystem_full'
+      - 'network_unrestricted'
+      - 'shell_access'
+      - 'credential_access'
+  selection_plugin_from_http:
+    source: openclaw
+    event_type: plugin_installation
+    source_url|startswith: 'http://'
+  selection_local_plugin_modification:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/plugins/'
+    file_path|endswith: '.py'
+  selection_mcp_server_addition:
+    source: openclaw
+    event_type: config_modification
+    configuration_section: 'mcp_servers'
+    action: 'add'
+    source: 'external'
+  selection_skill_installation_bypass:
+    source: openclaw
+    event_type: skill_installation
+    signature_verification: false
+    source: 'external'
+  selection_config_security_disable:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: 'openclaw.json'
+    content|contains:
+      - '"security_checks": false'
+      - '"verify_plugins": false'
+      - '"sandbox_mode": false'
+  condition: selection_openclaw_config or selection_config_plugin_modification or selection_untrusted_plugin_install or selection_dangerous_plugin_permissions or selection_plugin_from_http or selection_local_plugin_modification or selection_mcp_server_addition or selection_skill_installation_bypass or selection_config_security_disable
+falsepositives:
+  - Legitimate OpenClaw configuration updates
+  - Authorized plugin installations
+  - Development and testing environments
+  - Manual skill updates by authorized users
+level: critical

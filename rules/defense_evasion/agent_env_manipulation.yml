@@ -1,0 +1,34 @@
+id: agent-env-manip-001
+title: Environment Variable Manipulation
+description: |
+  Detects PATH hijacking, LD_PRELOAD injection, and manipulation of
+  sensitive environment variables containing credentials or tokens.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1574
+detection:
+  selection_path_hijack:
+    event_type: tool_call
+    command|contains:
+      - 'export PATH='
+      - 'PATH=/'
+  selection_ld_preload:
+    event_type: tool_call
+    command|contains:
+      - 'LD_PRELOAD='
+      - 'LD_LIBRARY_PATH='
+  selection_env_credential:
+    event_type: tool_call
+    command|contains:
+      - 'export ANTHROPIC_API_KEY='
+      - 'export AWS_SECRET_ACCESS_KEY='
+      - 'export GITHUB_TOKEN='
+      - 'export AWS_ACCESS_KEY_ID='
+  condition: selection_path_hijack or selection_ld_preload or selection_env_credential

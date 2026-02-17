@@ -1,0 +1,50 @@
+id: openclaw-session-spawn-abuse-001
+title: OpenClaw Suspicious Session Spawn Activity
+description: |
+  Detects OpenClaw session_spawn events and related patterns that may
+  indicate abuse of the agent session mechanism.  Rapid spawning of
+  sub-agents or spawning agents with suspicious names may indicate
+  an attempt to bypass security controls or establish parallel
+  execution paths for malicious actions.
+author: AgentShield
+date: "2026-02-07"
+status: production
+level: medium
+logsource:
+  product: agentshield
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.defense_evasion
+  - openclaw
+detection:
+  # Any session spawn event from OpenClaw
+  selection_spawn:
+    source: openclaw
+    event_type: session_spawn
+  # Exec tool creating background processes
+  selection_background_exec:
+    source: openclaw
+    event_type: tool_call
+    command|contains:
+      - '& disown'
+      - 'nohup '
+      - 'screen -d'
+      - 'tmux new -d'
+  # Fork bomb patterns
+  selection_fork_bomb:
+    source: openclaw
+    event_type: tool_call
+    command|contains:
+      - ':(){ :|:& };:'
+      - 'fork()'
+  # Detached shell spawning
+  selection_detached_shell:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'bash'
+      - '&'
+  condition: selection_spawn or selection_background_exec or selection_fork_bomb or selection_detached_shell

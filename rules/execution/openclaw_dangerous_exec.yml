@@ -1,0 +1,76 @@
+id: openclaw-dangerous-exec-001
+title: OpenClaw Remote Code Execution via Piped Script Download
+description: |
+  Detects OpenClaw tool calls that download and execute scripts from remote
+  sources using curl or wget piped to a shell interpreter.  This is a common
+  prompt injection vector where an attacker tricks an AI agent into running
+  malicious code fetched from the internet.
+author: AgentShield
+date: "2026-02-07"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.defense_evasion
+  - openclaw
+detection:
+  selection_curl_bash:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| bash'
+  selection_curl_sh:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| sh'
+  selection_wget_bash:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| bash'
+  selection_wget_sh:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| sh'
+  selection_curl_python:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| python'
+  selection_wget_python:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| python'
+  selection_bash_c_curl:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'curl'
+  selection_bash_c_wget:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'wget'
+  selection_eval_download:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'eval'
+      - 'curl'
+  condition: selection_curl_bash or selection_curl_sh or selection_wget_bash or selection_wget_sh or selection_curl_python or selection_wget_python or selection_bash_c_curl or selection_bash_c_wget or selection_eval_download

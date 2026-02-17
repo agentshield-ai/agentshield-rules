@@ -1,0 +1,34 @@
+id: agent-container-escape-001
+title: Container Escape Attempt
+description: |
+  Detects patterns associated with Docker/container escape techniques
+  including Docker socket access, nsenter usage, host filesystem mounting,
+  and /proc manipulation.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.privilege_escalation
+  - attack.t1611
+detection:
+  selection_docker_socket:
+    event_type: tool_call
+    command|contains: '/var/run/docker.sock'
+  selection_nsenter:
+    event_type: tool_call
+    command|contains: 'nsenter'
+  selection_mount_host:
+    event_type: tool_call
+    command|contains:
+      - 'mount /dev/'
+      - 'mount -o bind /'
+  selection_proc_escape:
+    event_type: tool_call
+    command|contains:
+      - '/proc/1/root'
+      - '/proc/sysrq-trigger'
+  condition: selection_docker_socket or selection_nsenter or selection_mount_host or selection_proc_escape

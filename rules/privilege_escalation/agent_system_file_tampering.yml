@@ -1,0 +1,40 @@
+id: agent-sys-tamper-001
+title: System File Modification
+description: |
+  Detects writes to critical system directories and binaries such as
+  /etc/, /usr/bin/, or /usr/local/bin/. These modifications could
+  indicate system compromise or backdoor installation.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1543
+detection:
+  selection_etc_write:
+    event_type: tool_call
+    command|contains:
+      - '> /etc/'
+      - 'tee /etc/'
+  selection_bin_write:
+    event_type: tool_call
+    command|contains:
+      - '> /usr/bin/'
+      - '> /usr/local/bin/'
+      - 'cp '
+    command|contains:
+      - '/usr/bin/'
+      - '/usr/local/bin/'
+  selection_write_tool_etc:
+    event_type: file_write
+    file_path|startswith: '/etc/'
+  selection_write_tool_bin:
+    event_type: file_write
+    file_path|startswith:
+      - '/usr/bin/'
+      - '/usr/local/bin/'
+  condition: selection_etc_write or selection_bin_write or selection_write_tool_etc or selection_write_tool_bin

@@ -1,0 +1,68 @@
+id: agent-mcp-config-manipulation-001
+title: MCP Configuration File Tampering
+description: |
+  Detects unauthorized modifications to MCP configuration files including
+  auto-approve settings, allowed commands, and MCP server additions that
+  could compromise agent security and enable privilege escalation.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1547
+  - attack.privilege_escalation
+  - attack.t1548
+detection:
+  selection_config_files:
+    event_type: file_write
+    file_path|contains:
+      - '.cursor/mcp.json'
+      - 'claude_desktop_config.json'
+      - '.claude/settings.json'
+      - 'CLAUDE.md'
+      - '.cursorrules'
+      - '.github/copilot-instructions.md'
+      - '.windsurfrules'
+  selection_dangerous_patterns:
+    event_type: file_write
+    content|contains:
+      - '"chat.tools.autoApprove": true'
+      - '"autoApprove": true'
+      - '"allowedCommands"'
+      - '"mcpServers"'
+      - '"servers"'
+  selection_mcp_server_addition:
+    event_type: file_write
+    content|contains:
+      - '"command":'
+      - '"args":'
+      - '"env":'
+    file_path|contains:
+      - 'mcp.json'
+      - 'claude_desktop_config.json'
+  selection_auto_execute:
+    event_type: file_write
+    content|contains:
+      - '"autoExecute"'
+      - '"skipConfirmation"'
+      - '"bypassApproval"'
+      - '"allowAll"'
+  selection_shell_access:
+    event_type: file_write
+    content|contains:
+      - '/bin/bash'
+      - '/bin/sh'
+      - 'cmd.exe'
+      - 'powershell.exe'
+    file_path|contains:
+      - '.json'
+  condition: selection_config_files or (selection_dangerous_patterns or selection_mcp_server_addition or selection_auto_execute or selection_shell_access)
+falsepositives:
+  - Legitimate MCP configuration changes by authorized users
+  - Initial setup of MCP servers
+  - Development and testing configurations
+level: critical

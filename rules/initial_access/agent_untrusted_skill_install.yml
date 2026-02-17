@@ -1,0 +1,70 @@
+id: agent-untrusted-skill-install-001
+title: Untrusted Package or Skill Installation
+description: |
+  Detects attempts to install packages or skills from untrusted sources
+  such as direct URLs, GitHub repositories, or tarball archives.
+  This pattern may indicate supply chain attacks or installation of
+  malicious dependencies.
+author: AgentShield
+date: "2026-01-25"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.execution
+  - attack.t1195
+  - attack.supply_chain
+detection:
+  # npm install from URLs or GitHub
+  selection_npm_github:
+    event_type: tool_call
+    command|contains:
+      - 'npm install github:'
+      - 'npm i github:'
+  selection_npm_url:
+    event_type: tool_call
+    command|contains: 'npm install http'
+  selection_npm_i_url:
+    event_type: tool_call
+    command|contains: 'npm i http'
+  selection_npm_tgz:
+    event_type: tool_call
+    command|contains:
+      - 'npm install'
+      - 'npm i '
+    command|endswith: '.tgz'
+  # pip install from URLs or git
+  selection_pip_git:
+    event_type: tool_call
+    command|contains:
+      - 'pip install git+'
+      - 'pip3 install git+'
+  selection_pip_url:
+    event_type: tool_call
+    command|contains:
+      - 'pip install http'
+      - 'pip3 install http'
+  # brew tap from unknown sources
+  selection_brew_tap:
+    event_type: tool_call
+    command|contains: 'brew tap '
+  # Yarn from URLs
+  selection_yarn_url:
+    event_type: tool_call
+    command|contains: 'yarn add http'
+  selection_yarn_github:
+    event_type: tool_call
+    command|contains: 'yarn add github:'
+  # Go install from URLs
+  selection_go_install:
+    event_type: tool_call
+    command|contains:
+      - 'go install github.com/'
+      - 'go get github.com/'
+  # MCP skill installation (claude code skills)
+  selection_mcp_skill:
+    event_type: tool_call
+    command|contains: 'mcp install http'
+  condition: selection_npm_github or selection_npm_url or selection_npm_i_url or selection_npm_tgz or selection_pip_git or selection_pip_url or selection_brew_tap or selection_yarn_url or selection_yarn_github or selection_go_install or selection_mcp_skill

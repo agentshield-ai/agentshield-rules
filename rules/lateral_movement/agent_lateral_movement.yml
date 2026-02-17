@@ -1,0 +1,78 @@
+id: agent-lateral-movement-001
+title: Agent Lateral Movement and Pivoting
+description: |
+  Detects lateral movement patterns where AI agents pivot to other systems
+  after network reconnaissance, transfer sensitive files to external hosts,
+  or spawn sub-agents on remote systems for distributed operations.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.lateral_movement
+  - attack.t1021
+  - attack.discovery
+  - attack.t1046
+detection:
+  selection_recon_then_ssh:
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'nmap'
+      - 'ssh'
+    time_window: '600s'
+  selection_port_scan_then_connect:
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'nmap -p'
+      - 'nc'
+    time_window: '300s'
+  selection_discovery_then_lateral:
+    event_type: tool_sequence
+    pattern: 'discovery_followed_by_connection'
+    tools_sequence:
+      - 'ping'
+      - 'ssh'
+    time_window: '900s'
+  selection_scp_to_discovered_hosts:
+    event_type: tool_call
+    command|contains: 'scp'
+    destination_discovered_recently: true
+  selection_rsync_external:
+    event_type: tool_call
+    command|contains|all:
+      - 'rsync'
+      - '@'
+    sensitive_files: true
+  selection_ssh_key_distribution:
+    event_type: tool_call
+    command|contains|all:
+      - 'ssh-copy-id'
+      - '@'
+  selection_remote_agent_spawn:
+    event_type: agent_creation
+    location: 'remote'
+    parent_agent_context: 'lateral_movement'
+  selection_multi_host_operations:
+    event_type: parallel_operations
+    hosts_count: '>3'
+    operation_type: 'file_transfer'
+  selection_credential_reuse:
+    event_type: authentication
+    credential_source: 'discovered'
+    target_host: 'new'
+  selection_persistence_on_remote:
+    event_type: tool_call
+    command|contains:
+      - 'ssh'
+      - 'crontab -e'
+    target: 'remote_host'
+  condition: selection_recon_then_ssh or selection_port_scan_then_connect or selection_discovery_then_lateral or selection_scp_to_discovered_hosts or selection_rsync_external or selection_ssh_key_distribution or selection_remote_agent_spawn or selection_multi_host_operations or selection_credential_reuse or selection_persistence_on_remote
+falsepositives:
+  - Legitimate system administration across multiple hosts
+  - Authorized backup and synchronization operations
+  - Infrastructure management and deployment
+  - Distributed computing tasks
+level: critical

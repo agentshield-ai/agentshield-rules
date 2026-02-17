@@ -1,0 +1,63 @@
+id: agent-prompt-injection-direct-001
+title: Direct Prompt Injection Attempt
+description: |
+  Detects direct prompt injection attempts in AI agent inputs containing
+  common jailbreak phrases, system override commands, and policy manipulation
+  structures. These patterns indicate attempts to compromise agent behavior
+  through malicious instructions.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.initial_access
+  - attack.t1190
+  - attack.defense_evasion
+  - attack.t1027
+detection:
+  selection_jailbreak_keywords:
+    event_type: user_input
+    message|contains:
+      - 'ignore previous instructions'
+      - 'you are now'
+      - 'developer mode'
+      - 'system override'
+      - 'DAN'
+      - 'Do Anything Now'
+      - 'jailbreak'
+      - 'forget everything'
+      - 'new instructions'
+  selection_base64_injection:
+    event_type: user_input
+    message|contains:
+      - 'aWdub3JlIHByZXZpb3VzIGluc3RydWN0aW9ucw=='  # ignore previous instructions
+      - 'eW91IGFyZSBub3c='  # you are now
+      - 'ZGV2ZWxvcGVyIG1vZGU='  # developer mode
+      - 'c3lzdGVtIG92ZXJyaWRl'  # system override
+  selection_policy_puppetry:
+    event_type: user_input
+    message|contains:
+      - '<policy>'
+      - '</policy>'
+      - '[POLICY]'
+      - '[/POLICY]'
+      - '<config>'
+      - '</config>'
+      - '[CONFIG]'
+      - 'system.policy'
+  selection_role_switching:
+    event_type: user_input
+    message|contains:
+      - 'act as if you are'
+      - 'pretend you are'
+      - 'roleplay as'
+      - 'simulate being'
+      - 'behave like'
+  condition: selection_jailbreak_keywords or selection_base64_injection or selection_policy_puppetry or selection_role_switching
+falsepositives:
+  - Legitimate discussions about AI safety and jailbreaking research
+  - Educational content about prompt injection
+level: critical

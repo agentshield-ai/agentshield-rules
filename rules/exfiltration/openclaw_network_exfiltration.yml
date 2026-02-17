@@ -1,0 +1,79 @@
+id: openclaw-network-exfiltration-001
+title: OpenClaw Data Exfiltration via Network Upload
+description: |
+  Detects OpenClaw exec tool calls that upload data to external servers
+  using curl POST, wget --post, or similar patterns.  This may indicate
+  an agent exfiltrating sensitive data (code, credentials, user content)
+  to an attacker-controlled endpoint.
+author: AgentShield
+date: "2026-02-07"
+status: production
+level: medium
+logsource:
+  product: agentshield
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.exfiltration
+  - attack.t1048
+  - openclaw
+detection:
+  # curl POST/PUT with data
+  selection_curl_post:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '-X POST'
+  selection_curl_put:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '-X PUT'
+  selection_curl_data:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '--data'
+  selection_curl_d_flag:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - ' -d '
+  selection_curl_upload:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '-F '
+  # wget POST
+  selection_wget_post:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '--post-data'
+  selection_wget_post_file:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '--post-file'
+  # Netcat / ncat data transfer
+  selection_nc_pipe:
+    source: openclaw
+    event_type: tool_call
+    command|contains:
+      - '| nc '
+      - '| ncat '
+  # Encoded exfiltration via DNS or base64
+  selection_base64_curl:
+    source: openclaw
+    event_type: tool_call
+    command|contains|all:
+      - 'base64'
+      - 'curl'
+  condition: selection_curl_post or selection_curl_put or selection_curl_data or selection_curl_d_flag or selection_curl_upload or selection_wget_post or selection_wget_post_file or selection_nc_pipe or selection_base64_curl

@@ -1,0 +1,85 @@
+id: openclaw-prompt-injection-001
+title: OpenClaw Prompt Injection in Tool Outputs
+description: |
+  Detects prompt injection attempts within OpenClaw tool call responses
+  and unexpected tool invocations after processing external content that
+  may indicate indirect prompt injection attacks targeting OpenClaw agents.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: openclaw
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.initial_access
+  - attack.t1566
+  - attack.defense_evasion
+  - attack.t1562
+  - openclaw
+detection:
+  selection_tool_response_injection:
+    source: openclaw
+    event_type: tool_response
+    response|contains:
+      - 'IGNORE PREVIOUS INSTRUCTIONS'
+      - 'NEW SYSTEM INSTRUCTIONS'
+      - 'OVERRIDE AGENT BEHAVIOR'
+      - 'EXECUTE IMMEDIATELY'
+      - '<|im_start|>system'
+  selection_unexpected_tool_after_external:
+    source: openclaw
+    event_type: tool_sequence
+    previous_tool: 'web_fetch'
+    next_tool|contains:
+      - 'exec'
+      - 'write'
+      - 'message'
+    time_between: '<30s'
+  selection_web_content_then_action:
+    source: openclaw
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'web_search'
+      - 'exec'
+    suspicious_pattern: true
+    time_window: '120s'
+  selection_injection_markers_in_responses:
+    source: openclaw
+    event_type: tool_response
+    response|contains:
+      - '{{SYSTEM:'
+      - '[OVERRIDE]'
+      - 'IMPORTANT NEW INSTRUCTIONS'
+      - '---SYSTEM---'
+      - '<ADMIN>'
+  selection_unicode_in_tool_output:
+    source: openclaw
+    event_type: tool_response
+    response|contains:
+      - '\u202a'
+      - '\u202e'
+      - '\u200b'
+      - '\ufeff'
+  selection_hidden_instructions_css:
+    source: openclaw
+    event_type: tool_response
+    response|contains|all:
+      - 'color: white'
+      - 'IMPORTANT'
+  selection_llm_token_injection:
+    source: openclaw
+    event_type: tool_response
+    response|contains:
+      - '<|endoftext|>'
+      - '[INST]'
+      - '<s>SYSTEM:'
+      - '### Instruction:'
+  condition: selection_tool_response_injection or selection_unexpected_tool_after_external or selection_web_content_then_action or selection_injection_markers_in_responses or selection_unicode_in_tool_output or selection_hidden_instructions_css or selection_llm_token_injection
+falsepositives:
+  - Legitimate documentation containing system commands
+  - Code examples showing prompt structures
+  - Web content with legitimate styling
+  - Educational content about AI systems
+level: critical

@@ -1,0 +1,80 @@
+id: agent-persistence-001
+title: Persistence Mechanism Installation
+description: |
+  Detects attempts to establish persistence on the system through
+  cron jobs, launch agents/daemons, systemd services, or shell
+  profile modifications. These patterns indicate an attacker trying
+  to maintain access across reboots.
+author: AgentShield
+date: "2026-01-25"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1053
+  - attack.t1543
+  - attack.t1546
+detection:
+  # Cron modifications
+  selection_crontab_edit:
+    event_type: tool_call
+    command|contains:
+      - 'crontab -e'
+      - 'crontab -l'
+      - 'crontab -'
+  selection_cron_write:
+    event_type: file_write
+    file_path|contains: '/etc/cron'
+  selection_cron_d_write:
+    event_type: file_write
+    file_path|contains: '/var/spool/cron'
+  # macOS LaunchAgents/LaunchDaemons
+  selection_launchagent_write:
+    event_type: file_write
+    file_path|contains: 'LaunchAgents/'
+  selection_launchdaemon_write:
+    event_type: file_write
+    file_path|contains: 'LaunchDaemons/'
+  selection_launchctl:
+    event_type: tool_call
+    command|contains: 'launchctl load'
+  selection_launchctl_bootstrap:
+    event_type: tool_call
+    command|contains: 'launchctl bootstrap'
+  # Systemd services
+  selection_systemd_write:
+    event_type: file_write
+    file_path|contains: '/systemd/system/'
+  selection_systemd_user_write:
+    event_type: file_write
+    file_path|contains: '.config/systemd/user/'
+  selection_systemctl_enable:
+    event_type: tool_call
+    command|contains:
+      - 'systemctl enable'
+      - 'systemctl --user enable'
+  # Shell profile modifications
+  selection_bashrc_write:
+    event_type: file_write
+    file_path|endswith:
+      - '.bashrc'
+      - '.bash_profile'
+      - '.profile'
+  selection_zshrc_write:
+    event_type: file_write
+    file_path|endswith:
+      - '.zshrc'
+      - '.zprofile'
+      - '.zshenv'
+  # Init.d scripts
+  selection_initd_write:
+    event_type: file_write
+    file_path|contains: '/etc/init.d/'
+  # RC local
+  selection_rclocal_write:
+    event_type: file_write
+    file_path|endswith: '/etc/rc.local'
+  condition: selection_crontab_edit or selection_cron_write or selection_cron_d_write or selection_launchagent_write or selection_launchdaemon_write or selection_launchctl or selection_launchctl_bootstrap or selection_systemd_write or selection_systemd_user_write or selection_systemctl_enable or selection_bashrc_write or selection_zshrc_write or selection_initd_write or selection_rclocal_write

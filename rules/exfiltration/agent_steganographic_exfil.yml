@@ -1,0 +1,85 @@
+id: agent-steganographic-exfil-001
+title: Steganographic Data Hiding
+description: |
+  Detects the use of steganographic tools and techniques that could be
+  used to hide sensitive data within images, audio, or other media files
+  for covert exfiltration purposes.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: high
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.exfiltration
+  - attack.t1048
+  - attack.defense_evasion
+  - attack.t1027
+detection:
+  selection_steganography_tools:
+    event_type: tool_call
+    command|contains:
+      - 'steghide'
+      - 'stegano'
+      - 'outguess'
+      - 'jphide'
+      - 'jsteg'
+      - 'f5'
+      - 'openstego'
+  selection_steghide_embed:
+    event_type: tool_call
+    command|contains|all:
+      - 'steghide'
+      - 'embed'
+  selection_exiftool_manipulation:
+    event_type: tool_call
+    command|contains|all:
+      - 'exiftool'
+      - '-overwrite_original'
+  selection_python_lsb:
+    event_type: tool_call
+    command|contains:
+      - 'PIL'
+      - 'LSB'
+      - 'least significant bit'
+    file_extension: '.py'
+  selection_python_stego_patterns:
+    event_type: code_execution
+    code|contains:
+      - 'img.putpixel'
+      - 'pixels[i] & 0xFE'
+      - 'bin(ord(char))'
+      - 'Image.open'
+    code|contains|all:
+      - 'for'
+      - 'pixel'
+  selection_audio_stego:
+    event_type: tool_call
+    command|contains:
+      - 'hideme'
+      - 'mp3stego'
+      - 'deepsteg'
+      - 'stegpy'
+  selection_file_carving:
+    event_type: tool_call
+    command|contains:
+      - 'binwalk'
+      - 'foremost'
+      - 'scalpel'
+    command|contains: '-e'
+  selection_suspicious_image_operations:
+    event_type: file_write
+    file_extension: 
+      - '.jpg'
+      - '.png'
+      - '.gif'
+      - '.bmp'
+    size_increase_ratio: '>1.5'
+  condition: selection_steganography_tools or selection_steghide_embed or selection_exiftool_manipulation or selection_python_lsb or selection_python_stego_patterns or selection_audio_stego or selection_file_carving or selection_suspicious_image_operations
+falsepositives:
+  - Legitimate digital forensics work
+  - Security research and testing
+  - Image editing and optimization
+  - Metadata removal for privacy
+level: high

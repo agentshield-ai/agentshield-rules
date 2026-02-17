@@ -1,0 +1,80 @@
+id: agent-exfil-via-dns-001
+title: Enhanced DNS Exfiltration
+description: |
+  Detects DNS-based data exfiltration techniques including DNS tunneling
+  tools and suspicious DNS query patterns that may indicate covert
+  data transmission through DNS channels.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: high
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.exfiltration
+  - attack.t1048
+  - attack.command_and_control
+  - attack.t1071
+detection:
+  selection_dns_tunneling_tools:
+    event_type: tool_call
+    command|contains:
+      - 'iodine'
+      - 'dnscat2'
+      - 'dns2tcp'
+      - 'DNSExfiltrator'
+      - 'dnscat'
+      - 'ozymandns'
+  selection_nslookup_exfil:
+    event_type: tool_call
+    command|contains|all:
+      - 'nslookup'
+      - '.txt'
+  selection_dig_exfil:
+    event_type: tool_call
+    command|contains|all:
+      - 'dig'
+      - 'TXT'
+  selection_base64_dns_queries:
+    event_type: dns_query
+    query|re: '[A-Za-z0-9+/]{20,}\..*'
+  selection_long_dns_queries:
+    event_type: dns_query
+    query_length: '>100'
+  selection_hex_encoded_dns:
+    event_type: dns_query
+    query|re: '^[0-9a-fA-F]{32,}\..*'
+  selection_suspicious_dns_tools:
+    event_type: tool_call
+    command|contains:
+      - 'host -t TXT'
+      - 'drill TXT'
+      - 'kdig TXT'
+  selection_dns_over_https:
+    event_type: network_request
+    url|contains:
+      - 'dns.google'
+      - 'cloudflare-dns.com'
+      - '1.1.1.1/dns-query'
+      - '8.8.8.8/dns-query'
+  selection_custom_dns_server:
+    event_type: tool_call
+    command|contains|all:
+      - '@'
+      - 'nslookup'
+    command|not|contains:
+      - '@8.8.8.8'
+      - '@1.1.1.1'
+      - '@208.67.222.222'
+  selection_dns_exfil_patterns:
+    event_type: dns_query
+    subdomain_count: '>5'
+    domain_entropy: '>3.5'
+  condition: selection_dns_tunneling_tools or selection_nslookup_exfil or selection_dig_exfil or selection_base64_dns_queries or selection_long_dns_queries or selection_hex_encoded_dns or selection_suspicious_dns_tools or selection_dns_over_https or selection_custom_dns_server or selection_dns_exfil_patterns
+falsepositives:
+  - Legitimate DNS diagnostics and troubleshooting
+  - Network administration tasks
+  - Security testing with authorization
+  - DNS-based service discovery
+level: high

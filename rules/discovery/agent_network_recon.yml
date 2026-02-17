@@ -1,0 +1,80 @@
+id: agent-network-recon-001
+title: Network Reconnaissance Activity
+description: |
+  Detects network scanning and reconnaissance activities that may indicate
+  an attacker mapping the network for lateral movement or identifying
+  vulnerable services.
+author: AgentShield
+date: "2026-01-25"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.discovery
+  - attack.t1046
+  - attack.t1040
+detection:
+  # nmap scanning
+  selection_nmap:
+    event_type: tool_call
+    command|contains: 'nmap '
+  selection_nmap_prefix:
+    event_type: tool_call
+    command|startswith: 'nmap'
+  # masscan
+  selection_masscan:
+    event_type: tool_call
+    command|contains: 'masscan '
+  selection_masscan_prefix:
+    event_type: tool_call
+    command|startswith: 'masscan'
+  # netcat port scanning
+  selection_nc_scan:
+    event_type: tool_call
+    command|contains:
+      - 'nc -z'
+      - 'nc -v'
+      - 'nc -n'
+      - 'netcat -z'
+  # zmap
+  selection_zmap:
+    event_type: tool_call
+    command|contains: 'zmap '
+  # arp-scan
+  selection_arp_scan:
+    event_type: tool_call
+    command|contains:
+      - 'arp-scan'
+      - 'arpscan'
+  # nbtscan
+  selection_nbtscan:
+    event_type: tool_call
+    command|contains: 'nbtscan'
+  # ping sweep
+  selection_ping_sweep:
+    event_type: tool_call
+    command|contains:
+      - 'fping '
+      - 'nping '
+  # rustscan
+  selection_rustscan:
+    event_type: tool_call
+    command|contains: 'rustscan'
+  # unicornscan
+  selection_unicornscan:
+    event_type: tool_call
+    command|contains: 'unicornscan'
+  # Network enumeration
+  selection_netdiscover:
+    event_type: tool_call
+    command|contains: 'netdiscover'
+  # hosts discovery
+  selection_host_enum:
+    event_type: tool_call
+    command|contains:
+      - 'enum4linux'
+      - 'snmpwalk'
+      - 'onesixtyone'
+  condition: selection_nmap or selection_nmap_prefix or selection_masscan or selection_masscan_prefix or selection_nc_scan or selection_zmap or selection_arp_scan or selection_nbtscan or selection_ping_sweep or selection_rustscan or selection_unicornscan or selection_netdiscover or selection_host_enum

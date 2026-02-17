@@ -1,0 +1,32 @@
+id: agent-dns-tunnel-001
+title: Potential DNS Tunneling or Encoded Data Transfer
+description: |
+  Detects patterns that may indicate DNS-based data exfiltration including
+  TXT record lookups, unusually long subdomains, and hex-encoded data
+  piped to network tools.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: medium
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.exfiltration
+  - attack.t1048
+detection:
+  selection_dig_txt:
+    event_type: tool_call
+    command|contains:
+      - 'dig TXT'
+      - 'dig +short TXT'
+      - 'nslookup -type=TXT'
+  selection_long_subdomain:
+    event_type: tool_call
+    command|re: 'dig\s+[a-zA-Z0-9]{30,}\.'
+  selection_xxd_nc:
+    event_type: tool_call
+    command|contains:
+      - 'xxd'
+      - 'od -A x'
+  condition: selection_dig_txt or selection_long_subdomain or selection_xxd_nc

@@ -1,0 +1,54 @@
+id: agent-prompt-injection-exfil-001
+title: Markdown Image Exfiltration Pattern
+description: |
+  Detects markdown image syntax with encoded data in URL parameters that
+  may indicate data exfiltration attempts through image URLs. This pattern
+  is commonly used in prompt injection attacks to steal sensitive information.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.exfiltration
+  - attack.t1041
+  - attack.t1048
+detection:
+  selection_markdown_exfil:
+    event_type: output_generation
+    content|re: '!\[.*\]\(https?://[^\s)]+\?[^\s)]*=[A-Za-z0-9+/=%]{10,}\)'
+  selection_data_params:
+    event_type: output_generation
+    content|contains:
+      - '?data='
+      - '&data='
+      - '?exfil='
+      - '&exfil='
+      - '?mem='
+      - '&mem='
+      - '?info='
+      - '&info='
+      - '?query='
+      - '&query='
+      - '?secret='
+      - '&secret='
+  selection_base64_in_url:
+    event_type: output_generation
+    content|re: 'https?://[^\s)]+[?&][^=]+=([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?'
+  selection_suspicious_domains:
+    event_type: output_generation
+    content|contains:
+      - 'webhook.site'
+      - 'requestcatcher.com'
+      - 'hookbin.com'
+      - 'requestbin.net'
+      - 'postb.in'
+      - 'pipedream.com'
+  condition: (selection_markdown_exfil or selection_data_params) and (selection_base64_in_url or selection_suspicious_domains)
+falsepositives:
+  - Legitimate image links with query parameters
+  - Documentation showing webhook examples
+  - Testing and development using webhook services
+level: critical

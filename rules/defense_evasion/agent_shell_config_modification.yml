@@ -1,0 +1,38 @@
+id: agent-shell-config-001
+title: Shell Configuration Modification
+description: |
+  Detects writes to shell startup files (.bashrc, .zshrc, .profile)
+  and SSH authorized_keys which could be used for persistence or
+  unauthorized access.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1546
+detection:
+  selection_shell_append:
+    event_type: tool_call
+    command|contains:
+      - '>> ~/.bashrc'
+      - '>> ~/.zshrc'
+      - '>> ~/.profile'
+      - '>> ~/.bash_profile'
+  selection_ssh_keys:
+    event_type: tool_call
+    command|contains:
+      - '>> ~/.ssh/authorized_keys'
+      - '> ~/.ssh/authorized_keys'
+  selection_write_tool:
+    event_type: file_write
+    file_path|endswith:
+      - '.bashrc'
+      - '.zshrc'
+      - '.profile'
+      - '.bash_profile'
+      - 'authorized_keys'
+  condition: selection_shell_append or selection_ssh_keys or selection_write_tool

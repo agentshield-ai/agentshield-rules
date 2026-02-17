@@ -1,0 +1,81 @@
+id: agent-cloud-iam-escalation-001
+title: Cloud IAM Privilege Escalation
+description: |
+  Detects cloud IAM operations that could lead to privilege escalation
+  including role assumption, policy attachment, and credential creation.
+  These operations are commonly used in cloud privilege escalation attacks.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.privilege_escalation
+  - attack.t1548
+  - attack.credential_access
+  - attack.t1552
+detection:
+  selection_aws_assume_role:
+    event_type: tool_call
+    command|contains:
+      - 'aws sts assume-role'
+      - 'aws sts get-session-token'
+      - 'aws sts get-federation-token'
+  selection_aws_iam_escalation:
+    event_type: tool_call
+    command|contains:
+      - 'aws iam attach-role-policy'
+      - 'aws iam attach-user-policy'
+      - 'aws iam attach-group-policy'
+      - 'aws iam put-role-policy'
+      - 'aws iam put-user-policy'
+      - 'aws iam put-group-policy'
+  selection_aws_credential_creation:
+    event_type: tool_call
+    command|contains:
+      - 'aws iam create-access-key'
+      - 'aws iam create-role'
+      - 'aws iam create-user'
+      - 'aws iam create-login-profile'
+  selection_gcp_auth:
+    event_type: tool_call
+    command|contains:
+      - 'gcloud auth activate-service-account'
+      - 'gcloud auth application-default login'
+      - 'gcloud config set account'
+  selection_gcp_iam:
+    event_type: tool_call
+    command|contains:
+      - 'gcloud projects add-iam-policy-binding'
+      - 'gcloud iam service-accounts create'
+      - 'gcloud iam service-accounts keys create'
+  selection_azure_auth:
+    event_type: tool_call
+    command|contains:
+      - 'az login'
+      - 'az account set'
+      - 'az ad app credential'
+      - 'az ad sp create'
+  selection_azure_role:
+    event_type: tool_call
+    command|contains:
+      - 'az role assignment create'
+      - 'az ad group member add'
+      - 'az keyvault set-policy'
+  selection_dangerous_permissions:
+    event_type: tool_call
+    command|contains:
+      - 'AdministratorAccess'
+      - 'IAMFullAccess'
+      - '*:*'
+      - 'roles/owner'
+      - 'roles/editor'
+  condition: selection_aws_assume_role or selection_aws_iam_escalation or selection_aws_credential_creation or selection_gcp_auth or selection_gcp_iam or selection_azure_auth or selection_azure_role or selection_dangerous_permissions
+falsepositives:
+  - Legitimate cloud administration tasks
+  - Infrastructure as Code deployments
+  - Authorized privilege escalation for specific tasks
+  - Service account management
+level: critical

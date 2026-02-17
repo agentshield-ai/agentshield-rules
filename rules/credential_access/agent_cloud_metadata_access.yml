@@ -1,0 +1,66 @@
+id: agent-cloud-metadata-access-001
+title: Cloud Metadata Endpoint Access
+description: |
+  Detects attempts to access cloud metadata endpoints that could expose
+  sensitive information such as instance credentials, roles, and configuration.
+  These endpoints are commonly targeted in cloud environment attacks.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.credential_access
+  - attack.t1552
+  - attack.discovery
+  - attack.t1580
+detection:
+  selection_aws_metadata:
+    event_type: network_request
+    url|contains: '169.254.169.254'
+  selection_aws_metadata_curl:
+    event_type: tool_call
+    command|contains:
+      - 'curl 169.254.169.254'
+      - 'wget 169.254.169.254'
+      - 'curl http://169.254.169.254'
+      - 'wget http://169.254.169.254'
+  selection_gcp_metadata:
+    event_type: network_request
+    url|contains: 'metadata.google.internal'
+  selection_gcp_metadata_curl:
+    event_type: tool_call
+    command|contains:
+      - 'curl metadata.google.internal'
+      - 'wget metadata.google.internal'
+      - 'curl http://metadata.google.internal'
+  selection_ecs_metadata:
+    event_type: network_request
+    url|contains: '169.254.170.2'
+  selection_ecs_metadata_curl:
+    event_type: tool_call
+    command|contains:
+      - 'curl 169.254.170.2'
+      - 'wget 169.254.170.2'
+  selection_credential_paths:
+    event_type: network_request
+    url|contains:
+      - '/meta-data/iam/security-credentials'
+      - '/computeMetadata/v1/instance/service-accounts'
+      - '/metadata/identity/oauth2/token'
+      - '/latest/meta-data/iam'
+  selection_imdsv1_requests:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '169.254.169.254'
+      - 'meta-data'
+  condition: selection_aws_metadata or selection_aws_metadata_curl or selection_gcp_metadata or selection_gcp_metadata_curl or selection_ecs_metadata or selection_ecs_metadata_curl or selection_credential_paths or selection_imdsv1_requests
+falsepositives:
+  - Legitimate cloud instance management scripts
+  - Infrastructure automation tools
+  - Monitoring and logging applications
+  - Cloud service discovery tools
+level: critical

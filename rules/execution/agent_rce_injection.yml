@@ -1,0 +1,59 @@
+id: agent-rce-injection-001
+title: Remote Code Execution via Piped Script Download
+description: |
+  Detects attempts to download and execute scripts from remote sources,
+  a common pattern in prompt injection attacks where an attacker tricks
+  an AI agent into running malicious code.
+author: AgentShield
+date: "2026-01-25"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.defense_evasion
+detection:
+  selection_curl_bash:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| bash'
+  selection_curl_sh:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| sh'
+  selection_wget_bash:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| bash'
+  selection_wget_sh:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| sh'
+  selection_curl_python:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| python'
+  selection_wget_python:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| python'
+  selection_bash_c_curl:
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'curl'
+  selection_bash_c_wget:
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'wget'
+  condition: selection_curl_bash or selection_curl_sh or selection_wget_bash or selection_wget_sh or selection_curl_python or selection_wget_python or selection_bash_c_curl or selection_bash_c_wget

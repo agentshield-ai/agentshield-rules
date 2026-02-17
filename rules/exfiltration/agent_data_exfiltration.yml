@@ -1,0 +1,34 @@
+id: agent-data-exfil-001
+title: Data Exfiltration via HTTP
+description: |
+  Detects commands that POST or upload file contents to external URLs,
+  which may indicate data exfiltration by a compromised AI agent.
+author: AgentShield
+date: "2026-02-04"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.exfiltration
+  - attack.t1048
+detection:
+  selection_curl_post:
+    event_type: tool_call
+    command|contains:
+      - 'curl -X POST'
+      - 'curl --data'
+      - 'curl -d @'
+      - 'curl -F file=@'
+  selection_curl_upload:
+    event_type: tool_call
+    command|contains:
+      - 'curl -T '
+      - 'curl --upload-file'
+  selection_wget_post:
+    event_type: tool_call
+    command|contains:
+      - 'wget --post-file'
+      - 'wget --post-data'
+  condition: selection_curl_post or selection_curl_upload or selection_wget_post

@@ -1,0 +1,105 @@
+id: openclaw-memory-poisoning-001
+title: OpenClaw Memory File Manipulation
+description: |
+  Detects malicious modifications to OpenClaw workspace context files
+  including MEMORY.md, SOUL.md, and AGENTS.md that contain URLs or
+  exfiltration patterns designed to inject persistent instructions
+  into the agent's context.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: critical
+logsource:
+  product: openclaw
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.collection
+  - attack.t1119
+  - openclaw
+detection:
+  selection_memory_files:
+    source: openclaw
+    event_type: file_write
+    file_path|endswith:
+      - 'MEMORY.md'
+      - 'SOUL.md'
+      - 'AGENTS.md'
+      - 'USER.md'
+      - 'TOOLS.md'
+  selection_context_file_urls:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/workspace'
+    content|contains:
+      - 'http://'
+      - 'https://'
+      - '![](http'
+      - 'webhook'
+  selection_exfil_patterns:
+    source: openclaw
+    event_type: file_write
+    file_path|endswith: '.md'
+    content|re: '!\[.*\]\(https?://[^\s)]+\?[^\s)]*=[A-Za-z0-9+/=%]{10,}\)'
+  selection_persistent_instructions:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/workspace'
+    content|contains:
+      - 'ALWAYS remember to'
+      - 'In every response, include'
+      - 'For all future interactions'
+      - 'SYSTEM OVERRIDE'
+      - 'IMPORTANT: Always'
+  selection_hidden_instructions:
+    source: openclaw
+    event_type: file_write
+    content|contains:
+      - '\u200b'
+      - '\ufeff'
+      - '\u202a'
+      - '\u202e'
+      - 'color: white'
+      - 'display: none'
+  selection_bootstrap_modification:
+    source: openclaw
+    event_type: file_write
+    file_path|endswith: 'BOOTSTRAP.md'
+    content|contains:
+      - 'http'
+      - 'curl'
+      - 'wget'
+      - 'exec'
+  selection_memory_directory_tampering:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/workspace/memory/'
+    content|contains:
+      - 'SYSTEM:'
+      - 'OVERRIDE:'
+      - 'IMPORTANT:'
+  selection_heartbeat_poisoning:
+    source: openclaw
+    event_type: file_write
+    file_path|endswith: 'HEARTBEAT.md'
+    content|contains:
+      - 'curl'
+      - 'wget'
+      - 'exec'
+      - 'message'
+  selection_workspace_injection:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/workspace'
+    content|contains|all:
+      - 'IMPORTANT'
+      - 'http'
+  condition: (selection_memory_files or selection_bootstrap_modification or selection_memory_directory_tampering or selection_heartbeat_poisoning) and (selection_context_file_urls or selection_exfil_patterns or selection_persistent_instructions or selection_hidden_instructions or selection_workspace_injection)
+falsepositives:
+  - Legitimate workspace documentation updates
+  - User-requested memory modifications
+  - Normal agent configuration changes
+  - Development and testing activities
+level: critical

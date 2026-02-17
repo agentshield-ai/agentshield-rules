@@ -1,0 +1,64 @@
+id: agent-rules-file-backdoor-001
+title: Hidden Unicode in AI Rule Files
+description: |
+  Detects hidden Unicode characters in AI assistant rule files that could
+  contain invisible instructions. These files are commonly used to configure
+  AI behavior and may be exploited through bidirectional text, zero-width
+  characters, or byte-order marks to hide malicious instructions.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: high
+logsource:
+  product: ai_agent
+  category: agent_events
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.defense_evasion
+  - attack.t1564
+detection:
+  selection_rule_files:
+    event_type: file_write
+    file_path|endswith:
+      - '.cursorrules'
+      - '.windsurfrules'
+      - 'CLAUDE.md'
+      - '.github/copilot-instructions.md'
+  selection_rule_dirs:
+    event_type: file_write
+    file_path|contains: '.cursor/rules/'
+  selection_bidi_unicode:
+    event_type: file_write
+    content|contains:
+      - '\u202a'  # LEFT-TO-RIGHT EMBEDDING
+      - '\u202b'  # RIGHT-TO-LEFT EMBEDDING
+      - '\u202c'  # POP DIRECTIONAL FORMATTING
+      - '\u202d'  # LEFT-TO-RIGHT OVERRIDE
+      - '\u202e'  # RIGHT-TO-LEFT OVERRIDE
+  selection_zero_width:
+    event_type: file_write
+    content|contains:
+      - '\u200d'  # ZERO WIDTH JOINER
+      - '\ufeff'  # BYTE ORDER MARK
+      - '\u200b'  # ZERO WIDTH SPACE
+      - '\u200c'  # ZERO WIDTH NON-JOINER
+      - '\u2060'  # WORD JOINER
+  selection_suspicious_byte_ratio:
+    event_type: file_write
+    byte_size_to_visible_char_ratio: '>1.2'
+  selection_hidden_instructions:
+    event_type: file_write
+    content|contains:
+      - 'ALWAYS'
+      - 'NEVER'
+      - 'MUST'
+      - 'OVERRIDE'
+      - 'IGNORE'
+    visibility_analysis: 'contains_hidden_text'
+  condition: (selection_rule_files or selection_rule_dirs) and (selection_bidi_unicode or selection_zero_width or selection_suspicious_byte_ratio or selection_hidden_instructions)
+falsepositives:
+  - Legitimate Unicode characters for proper text rendering
+  - Non-Latin scripts requiring special Unicode handling
+  - Copy-paste artifacts from web content
+level: high

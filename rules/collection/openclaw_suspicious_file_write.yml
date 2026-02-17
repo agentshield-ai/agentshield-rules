@@ -1,0 +1,78 @@
+id: openclaw-suspicious-file-write-001
+title: OpenClaw Suspicious File Write to Sensitive Paths
+description: |
+  Detects OpenClaw file write or edit operations targeting sensitive system
+  paths such as /etc/, shell startup files (.bashrc, .zshrc, .profile),
+  crontab entries, and systemd service files.  An AI agent writing to these
+  locations may indicate persistence establishment or system tampering.
+author: AgentShield
+date: "2026-02-07"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+  source: openclaw
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.t1053
+  - openclaw
+detection:
+  # Writes to /etc/
+  selection_etc_write:
+    source: openclaw
+    event_type: file_write
+    command|contains: '/etc/'
+  selection_etc_edit:
+    source: openclaw
+    event_type: file_edit
+    command|contains: '/etc/'
+  # Shell startup file modifications
+  selection_bashrc:
+    source: openclaw
+    event_type|contains:
+      - file_write
+      - file_edit
+    command|contains:
+      - '.bashrc'
+      - '.bash_profile'
+      - '.zshrc'
+      - '.zprofile'
+      - '.profile'
+  # Crontab modifications via exec
+  selection_crontab:
+    source: openclaw
+    event_type: tool_call
+    command|contains: 'crontab'
+  # Writes to cron directories
+  selection_cron_write:
+    source: openclaw
+    event_type: file_write
+    command|contains:
+      - '/cron.d/'
+      - '/crontab'
+      - '/cron.daily/'
+      - '/cron.hourly/'
+  # systemd service file writes
+  selection_systemd:
+    source: openclaw
+    event_type: file_write
+    command|contains:
+      - '/systemd/system/'
+      - '/systemd/user/'
+  # launchd plist writes
+  selection_launchd:
+    source: openclaw
+    event_type: file_write
+    command|contains:
+      - '/LaunchAgents/'
+      - '/LaunchDaemons/'
+  # Authorized keys modification
+  selection_authorized_keys:
+    source: openclaw
+    event_type|contains:
+      - file_write
+      - file_edit
+    command|contains: '.ssh/authorized_keys'
+  condition: selection_etc_write or selection_etc_edit or selection_bashrc or selection_crontab or selection_cron_write or selection_systemd or selection_launchd or selection_authorized_keys

@@ -1,0 +1,52 @@
+id: agent-mcp-rug-pull-001
+title: MCP Tool Description Changes (Rug Pull)
+description: |
+  Detects changes in MCP tool descriptions between loads, particularly
+  when the same tool name returns different functionality descriptions.
+  This pattern may indicate a "rug pull" attack where tools change
+  behavior after being trusted.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: medium
+logsource:
+  product: ai_agent
+  category: mcp_events
+tags:
+  - attack.defense_evasion
+  - attack.t1036
+  - attack.persistence
+  - attack.t1546
+detection:
+  selection_tool_description_change:
+    event_type: tool_list_comparison
+    tool_name: '*'
+    description_hash_changed: true
+  selection_function_change:
+    event_type: tool_description
+    tool_name: '*'
+    previous_description_exists: true
+    description_similarity_score: '<0.8'
+  selection_capability_mismatch:
+    event_type: tool_execution
+    tool_name: '*'
+    actual_behavior_matches_description: false
+  selection_suspicious_description_update:
+    event_type: tool_description_update
+    new_description|contains:
+      - 'SYSTEM'
+      - 'OVERRIDE'
+      - 'EXECUTE'
+      - 'ADMIN'
+      - 'ROOT'
+      - 'SHELL'
+  selection_length_change:
+    event_type: tool_description_update
+    description_length_ratio: '>2.0'  # New description >2x longer
+  condition: selection_tool_description_change or selection_function_change or selection_capability_mismatch or (selection_suspicious_description_update and selection_length_change)
+falsepositives:
+  - Legitimate tool updates and improvements
+  - Version updates with enhanced functionality
+  - Bug fixes that change tool behavior
+  - Tool documentation improvements
+level: medium

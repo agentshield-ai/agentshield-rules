@@ -1,0 +1,67 @@
+id: agent-mcp-tool-poisoning-001
+title: Suspicious MCP Tool Descriptions
+description: |
+  Detects MCP tool descriptions containing system-level instructions,
+  ANSI escape sequences, or excessively long imperative instructions
+  that may indicate tool poisoning attacks designed to manipulate
+  agent behavior through malicious tool metadata.
+author: AgentShield
+date: "2026-02-16"
+status: production
+level: high
+logsource:
+  product: ai_agent
+  category: mcp_events
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.defense_evasion
+  - attack.t1027
+detection:
+  selection_system_instructions:
+    event_type: tool_description
+    description|contains:
+      - '<IMPORTANT>'
+      - '<SYSTEM>'
+      - '{{SYSTEM:'
+      - '[SYSTEM]'
+      - 'OVERRIDE:'
+      - 'IGNORE PREVIOUS'
+      - 'NEW INSTRUCTIONS:'
+  selection_long_imperative:
+    event_type: tool_description
+    description|contains:
+      - 'ALWAYS'
+      - 'MUST'
+      - 'NEVER'
+      - 'IMMEDIATELY'
+      - 'EXECUTE'
+      - 'RUN'
+    condition_length: len(description) > 500
+  selection_ansi_escape:
+    event_type: tool_description
+    description|contains:
+      - '\x1b['
+      - '\033['
+      - '\u001b['
+      - '\e['
+  selection_response_ansi:
+    event_type: tool_response
+    response|contains:
+      - '\x1b['
+      - '\033['
+      - '\u001b['
+      - '\e['
+  selection_hidden_instructions:
+    event_type: tool_description
+    description|contains:
+      - 'color: white'
+      - 'display: none'
+      - 'visibility: hidden'
+      - 'font-size: 0'
+  condition: selection_system_instructions or (selection_long_imperative and condition_length) or selection_ansi_escape or selection_response_ansi or selection_hidden_instructions
+falsepositives:
+  - Legitimate tool descriptions with detailed usage instructions
+  - Terminal applications that legitimately use ANSI codes
+  - Documentation or help text containing system keywords
+level: high
