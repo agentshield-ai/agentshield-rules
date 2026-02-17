@@ -1,0 +1,56 @@
+id: agent-reverse-shell-001
+title: Reverse Shell Attempt
+description: |
+  Detects commands that establish reverse shells, allowing an attacker
+  to gain interactive remote access to the agent's host system.
+  Covers bash, python, perl, nc, and socat reverse shell patterns.
+author: AgentShield
+date: "2026-02-17"
+status: production
+level: critical
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.persistence
+  - attack.t1573
+detection:
+  selection_bash_tcp:
+    event_type: tool_call
+    command|contains:
+      - '/dev/tcp/'
+      - '/dev/udp/'
+      - 'bash -i >&'
+      - 'bash -i >& '
+  selection_netcat:
+    event_type: tool_call
+    command|contains:
+      - 'nc -e /bin'
+      - 'nc -e /usr'
+      - 'ncat -e /bin'
+      - 'nc -c /bin'
+      - 'nc -lvp'
+  selection_python:
+    event_type: tool_call
+    command|contains:
+      - 'import socket,subprocess'
+      - 'socket.socket(socket.AF_INET'
+      - 'subprocess.call(["/bin/sh"'
+      - 'pty.spawn("/bin'
+  selection_perl:
+    event_type: tool_call
+    command|contains:
+      - 'perl -e' 
+      - 'IO::Socket::INET'
+  selection_socat:
+    event_type: tool_call
+    command|contains:
+      - 'socat exec:'
+      - 'socat TCP:'
+  selection_mkfifo:
+    event_type: tool_call
+    command|contains:
+      - 'mkfifo /tmp/'
+  condition: selection_bash_tcp or selection_netcat or selection_python or selection_perl or selection_socat or selection_mkfifo

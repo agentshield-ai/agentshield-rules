@@ -1,0 +1,46 @@
+id: agent-env-enum-001
+title: Environment Variable Enumeration for Secrets
+description: |
+  Detects commands that enumerate environment variables, which commonly
+  contain API keys, tokens, and credentials. Attackers use this to
+  harvest secrets from the agent's runtime environment.
+author: AgentShield
+date: "2026-02-17"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.credential_access
+  - attack.t1552.001
+  - attack.discovery
+  - attack.t1082
+detection:
+  selection_env_grep:
+    event_type: tool_call
+    command|contains:
+      - 'env | grep'
+      - 'env |grep'
+      - 'printenv | grep'
+      - 'printenv |grep'
+      - 'set | grep'
+  selection_env_secret_keywords:
+    event_type: tool_call
+    command|contains:
+      - 'grep -i key'
+      - 'grep -i token'
+      - 'grep -i secret'
+      - 'grep -i password'
+      - 'grep -i credential'
+      - 'grep -i api_key'
+      - 'grep -i apikey'
+      - 'grep API_KEY'
+      - 'grep SECRET'
+      - 'grep TOKEN'
+  selection_full_env_dump:
+    event_type: tool_call
+    command|contains:
+      - 'printenv'
+      - 'export -p'
+  condition: selection_env_grep or selection_env_secret_keywords or selection_full_env_dump

@@ -1,0 +1,45 @@
+id: agent-write-prompt-injection-001
+title: Prompt Injection via File Write
+description: |
+  Detects file write operations where the content contains prompt injection
+  patterns. Attackers can poison files that other agents or future sessions
+  will read, hijacking their behaviour.
+author: AgentShield
+date: "2026-02-17"
+status: production
+level: high
+logsource:
+  product: agentshield
+  category: agent_events
+tags:
+  - attack.initial_access
+  - attack.t1566
+detection:
+  selection_ignore:
+    event_type: tool_call
+    content|contains:
+      - 'ignore previous instructions'
+      - 'ignore all previous'
+      - 'disregard previous'
+      - 'disregard all previous'
+      - 'forget your instructions'
+      - 'override your instructions'
+      - 'new instructions:'
+      - 'system prompt:'
+  selection_role_hijack:
+    event_type: tool_call
+    content|contains:
+      - 'you are now'
+      - 'act as if you are'
+      - 'pretend you are'
+      - 'from now on you'
+      - 'your new role is'
+  selection_exfil_instruction:
+    event_type: tool_call
+    content|contains:
+      - 'send the contents to'
+      - 'exfiltrate'
+      - 'upload this to'
+      - 'curl http'
+      - 'wget http'
+  condition: selection_ignore or selection_role_hijack or selection_exfil_instruction
