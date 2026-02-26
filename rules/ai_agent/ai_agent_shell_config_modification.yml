@@ -1,0 +1,50 @@
+title: Shell Configuration Modification
+id: 1e785c77-6d77-5c79-ae24-6a389f9ef7f1
+related:
+  - id: agent-shell-config-001
+    type: obsoletes
+  - id: d12c1b8c-4ee7-5548-947b-a1627bdc98dc
+    type: similar
+status: stable
+description: |
+  Detects writes to shell startup files (.bashrc, .zshrc, .profile)
+  and SSH authorized_keys which could be used for persistence or
+  unauthorized access.
+references:
+  - https://attack.mitre.org/techniques/T1546/
+author: AgentShield
+date: "2026-02-04"
+modified: "2026-02-24"
+tags:
+  - attack.persistence
+  - attack.t1546
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_shell_append:
+    event_type: tool_call
+    command|contains:
+      - '>> ~/.bashrc'
+      - '>> ~/.zshrc'
+      - '>> ~/.profile'
+      - '>> ~/.bash_profile'
+  selection_ssh_keys:
+    event_type: tool_call
+    command|contains:
+      - '>> ~/.ssh/authorized_keys'
+      - '> ~/.ssh/authorized_keys'
+  selection_write_tool:
+    event_type: file_write
+    file_path|endswith:
+      - '.bashrc'
+      - '.zshrc'
+      - '.profile'
+      - '.bash_profile'
+      - 'authorized_keys'
+  condition: selection_shell_append or selection_ssh_keys or selection_write_tool
+falsepositives:
+  - Legitimate shell customisation by developers adding aliases or PATH entries
+  - Package managers that update shell profiles during installation
+  - Development environment setup tools like nvm, pyenv, or rbenv
+level: high

@@ -1,0 +1,53 @@
+title: Environment Variable Manipulation
+id: 94e5f1ad-d61b-5266-8bf3-5fb91c0d4970
+related:
+  - id: agent-env-manip-001
+    type: obsoletes
+status: stable
+description: |
+  Detects PATH hijacking, LD_PRELOAD injection, and manipulation of
+  sensitive environment variables containing credentials or tokens.
+references:
+  - https://attack.mitre.org/techniques/T1574/
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+author: AgentShield
+date: "2026-02-04"
+modified: "2026-02-24"
+tags:
+  - attack.persistence
+  - attack.t1574
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  # NOTE: 'export PATH=' is common in legitimate operations. This selection
+  # requires a suspicious temporary directory to reduce false positives.
+  selection_path_hijack:
+    event_type: tool_call
+    command|contains|all:
+      - 'export PATH='
+      - '/tmp'
+  selection_path_override:
+    event_type: tool_call
+    command|contains:
+      - 'PATH=/tmp'
+      - 'PATH=/var/tmp'
+      - 'PATH=/dev/shm'
+  selection_ld_preload:
+    event_type: tool_call
+    command|contains:
+      - 'LD_PRELOAD='
+      - 'LD_LIBRARY_PATH='
+  selection_env_credential:
+    event_type: tool_call
+    command|contains:
+      - 'export ANTHROPIC_API_KEY='
+      - 'export AWS_SECRET_ACCESS_KEY='
+      - 'export GITHUB_TOKEN='
+      - 'export AWS_ACCESS_KEY_ID='
+  condition: selection_path_hijack or selection_path_override or selection_ld_preload or selection_env_credential
+falsepositives:
+  - System administrators configuring PATH for new tool installations
+  - Development environment setup scripts that set PATH or library paths
+  - CI/CD pipelines that export credentials as environment variables
+level: high

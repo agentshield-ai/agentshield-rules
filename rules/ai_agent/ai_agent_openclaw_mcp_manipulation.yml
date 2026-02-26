@@ -1,0 +1,88 @@
+title: OpenClaw MCP Configuration Tampering
+id: c6651188-df04-513f-a86f-35f898b4e92a
+related:
+  - id: openclaw-mcp-manipulation-001
+    type: obsoletes
+status: test
+description: |
+  Detects unauthorized modifications to OpenClaw MCP configuration files
+  and plugin installations from untrusted sources that could compromise
+  the security and integrity of the OpenClaw environment.
+references:
+  - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+  - https://attack.mitre.org/techniques/T1547/
+  - https://attack.mitre.org/techniques/T1112/
+  - https://blog.trailofbits.com/2025/01/09/the-risks-of-mcp-and-ai-tool-ecosystems/
+author: AgentShield
+date: "2026-02-16"
+modified: "2026-02-24"
+tags:
+  - attack.persistence
+  - attack.t1547
+  - attack.defense_evasion
+  - attack.t1112
+  - openclaw
+logsource:
+  product: ai_agent
+  category: agent_events
+  source: openclaw
+detection:
+  selection_openclaw_config:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '~/.openclaw/openclaw.json'
+  selection_config_plugin_modification:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: 'openclaw.json'
+    content|contains:
+      - '"plugins":'
+      - '"mcpServers":'
+      - '"skills":'
+  selection_untrusted_plugin_install:
+    source: openclaw
+    event_type: plugin_installation
+    source_url|not|contains:
+      - 'github.com/openclaw-official'
+      - 'official.openclaw.org'
+      - 'openclaw.ai/plugins'
+  selection_dangerous_plugin_permissions:
+    source: openclaw
+    event_type: plugin_configuration
+    permissions|contains:
+      - 'filesystem_full'
+      - 'network_unrestricted'
+      - 'shell_access'
+      - 'credential_access'
+  selection_plugin_from_http:
+    source: openclaw
+    event_type: plugin_installation
+    source_url|startswith: 'http://'
+  selection_local_plugin_modification:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: '.openclaw/plugins/'
+    file_path|endswith: '.py'
+  selection_mcp_server_addition:
+    source: openclaw
+    event_type: config_modification
+    configuration_section: 'mcp_servers'
+    action: 'add'
+  selection_skill_installation_bypass:
+    source: openclaw
+    event_type: skill_installation
+    # Custom: requires AgentShield signature verification
+    signature_verification: false
+  selection_config_security_disable:
+    source: openclaw
+    event_type: file_write
+    file_path|contains: 'openclaw.json'
+    content|contains:
+      - '"security_checks": false'
+      - '"verify_plugins": false'
+      - '"sandbox_mode": false'
+  condition: selection_openclaw_config or selection_config_plugin_modification or selection_untrusted_plugin_install or selection_dangerous_plugin_permissions or selection_plugin_from_http or selection_local_plugin_modification or selection_mcp_server_addition or selection_skill_installation_bypass or selection_config_security_disable
+falsepositives:
+  - Legitimate OpenClaw plugin installation from authorised third-party sources
+  - Development environments where sandbox mode is intentionally disabled
+level: critical

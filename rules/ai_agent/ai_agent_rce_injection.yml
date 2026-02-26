@@ -1,0 +1,79 @@
+title: Remote Code Execution via Piped Script Download
+id: c65a9620-e989-5a2c-b993-c81a6c049a84
+related:
+  - id: agent-rce-injection-001
+    type: obsoletes
+  - id: 76eb614c-cea3-5aaa-ae79-aeb242cb1f12
+    type: similar
+status: stable
+description: |
+  Detects attempts to download and execute scripts from remote sources,
+  a common pattern in prompt injection attacks where an attacker tricks
+  an AI agent into running malicious code.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-01-25"
+modified: "2026-02-24"
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.defense_evasion
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_curl_bash:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| bash'
+  selection_curl_sh:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| sh'
+  selection_wget_bash:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| bash'
+  selection_wget_sh:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| sh'
+  selection_curl_python:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - '| python'
+  selection_wget_python:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - '| python'
+  selection_bash_c_curl:
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'curl'
+  selection_bash_c_wget:
+    event_type: tool_call
+    command|contains|all:
+      - 'bash -c'
+      - 'wget'
+  # Process substitution: bash <(curl ...) or sh <(curl ...)
+  selection_procsub_curl:
+    event_type: tool_call
+    command|re: '(bash|sh)\s+<\(curl'
+  selection_procsub_wget:
+    event_type: tool_call
+    command|re: '(bash|sh)\s+<\(wget'
+  condition: selection_curl_bash or selection_curl_sh or selection_wget_bash or selection_wget_sh or selection_curl_python or selection_wget_python or selection_bash_c_curl or selection_bash_c_wget or selection_procsub_curl or selection_procsub_wget
+falsepositives:
+  - Legitimate installer scripts from trusted vendors (e.g. Homebrew, Rust) that use pipe-to-shell patterns
+  - CI/CD pipelines that bootstrap environments via curl-to-shell from internal artifact stores
+level: critical

@@ -1,0 +1,61 @@
+title: MCP Tool Description Changes (Rug Pull)
+id: 43a31200-6894-5c9b-a187-1cd0a11af2b3
+related:
+  - id: agent-mcp-rug-pull-001
+    type: obsoletes
+status: test
+description: |
+  Detects changes in MCP tool descriptions between loads, particularly
+  when the same tool name returns different functionality descriptions.
+  This pattern may indicate a "rug pull" attack where tools change
+  behavior after being trusted.
+references:
+  - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+  - https://attack.mitre.org/techniques/T1036/
+  - https://attack.mitre.org/techniques/T1546/
+  - https://blog.trailofbits.com/2025/01/09/the-risks-of-mcp-and-ai-tool-ecosystems/
+author: AgentShield
+date: "2026-02-16"
+modified: "2026-02-24"
+tags:
+  - attack.defense_evasion
+  - attack.t1036
+  - attack.persistence
+  - attack.t1546
+logsource:
+  product: ai_agent
+  category: mcp_events
+detection:
+  selection_tool_description_change:
+    event_type: tool_list_comparison
+    tool_name: '*'
+    description_hash_changed: true
+  selection_function_change:
+    event_type: tool_description
+    tool_name: '*'
+    previous_description_exists: true
+    # Custom: requires AgentShield description similarity scoring
+    description_similarity_score: '<0.8'
+  selection_capability_mismatch:
+    event_type: tool_execution
+    tool_name: '*'
+    # Custom: requires AgentShield behavioural verification engine
+    actual_behavior_matches_description: false
+  selection_suspicious_description_update:
+    event_type: tool_description_update
+    new_description|contains:
+      - 'SYSTEM'
+      - 'OVERRIDE'
+      - 'EXECUTE'
+      - 'ADMIN'
+      - 'ROOT'
+      - 'SHELL'
+  selection_length_change:
+    event_type: tool_description_update
+    # Custom: requires AgentShield description length analysis
+    description_length_ratio: '>2.0'
+  condition: selection_tool_description_change or selection_function_change or selection_capability_mismatch or (selection_suspicious_description_update and selection_length_change)
+falsepositives:
+  - Legitimate tool version upgrades that change descriptions as part of a release
+  - MCP server restarts that reload tool definitions with updated documentation
+level: medium

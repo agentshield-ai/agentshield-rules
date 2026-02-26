@@ -1,248 +1,254 @@
 # AgentShield Sigma Rules
 
-A comprehensive collection of Sigma detection rules specifically designed for AI agent security monitoring and threat detection.
+## What is This Repository?
 
-## Overview
+This repository contains detection rules that help identify when an AI agent is being attacked or manipulated. Think of it as a library of "threat signatures" -- each rule describes a pattern that, when matched against an agent's log data, signals that something suspicious may be happening.
 
-This repository contains **36 Sigma rules** organized across **12 MITRE ATT&CK categories**, providing comprehensive coverage for AI agent threat detection. These rules cover various attack vectors against AI agents including prompt injection, tool poisoning, credential theft, data exfiltration, privilege escalation, and defense evasion techniques.
+[AgentShield](https://github.com/agentshield-ai/agentshield) is an open-source security layer for AI agents. It monitors agent behaviour in real time and uses these Sigma rules to detect adversarial attacks such as prompt injection, data theft, tool poisoning, and privilege escalation -- before they cause harm.
 
-The rules are designed for use with the [AgentShield detection engine](https://github.com/agentshield-ai/agentshield-engine) but are compatible with any Sigma-based detection system.
+## What Are Sigma Rules?
 
-## Rule Statistics
+Sigma is an open standard used across the cybersecurity industry for writing detection rules. If antivirus signatures tell your computer "this file is malicious", Sigma rules tell your security platform "this pattern of activity in the logs is suspicious".
 
-- **Total Rules**: 36
-- **Categories**: 12 MITRE ATT&CK tactics  
-- **Format**: Standard Sigma YAML
-- **Maintenance**: Actively maintained with regular updates
+A Sigma rule is a short YAML file that says: *"If you see **this pattern** in the logs, raise an alert."* For example, a simplified rule might look like:
 
-### Rules by Category
-
-| Category | Rule Count | Description |
-|----------|------------|-------------|
-| **Defense Evasion** | 8 | Memory poisoning, config manipulation, shell modification |
-| **Exfiltration** | 5 | DNS tunneling, HTTP exfil, steganography, network uploads |
-| **Privilege Escalation** | 4 | Container escape, IAM escalation, system file tampering |
-| **Credential Access** | 3 | SSH keys, cloud credentials, environment files |
-| **Execution** | 3 | Remote code execution, dangerous commands, session spawn |
-| **Persistence** | 3 | Backdoors, rule tampering, MCP manipulation |
-| **Prompt Injection** | 3 | Direct jailbreaks, indirect manipulation, tool outputs |
-| **Tool Poisoning** | 2 | MCP manipulation, skill tampering, rug pulls |
-| **Discovery** | 2 | Network reconnaissance, DNS enumeration |
-| **Collection** | 1 | Suspicious file operations to sensitive paths |
-| **Initial Access** | 1 | Untrusted package/skill installation |
-| **Lateral Movement** | 1 | Agent pivoting and lateral movement |
-
-## Complete Rule Reference
-
-| Rule ID | Title | Category | Severity | Description |
-|---------|-------|----------|----------|-------------|
-| openclaw-suspicious-file-write-001 | OpenClaw Suspicious File Write to Sensitive Paths | collection | high | Detects OpenClaw file operations targeting sensitive system paths |
-| agent-cloud-metadata-access-001 | Cloud Metadata Endpoint Access | credential_access | critical | Detects attempts to access cloud metadata endpoints for credentials |
-| agent-credential-access-001 | Credential File Access Attempt | credential_access | high | Detects access to sensitive credential files and environment configs |
-| openclaw-credential-access-001 | OpenClaw Credential File Access | credential_access | high | Detects OpenClaw operations accessing SSH keys, certificates, tokens |
-| agent-config-autoapprove-001 | Auto-Approve Configuration Changes | defense_evasion | critical | Detects modifications enabling automatic approval of dangerous actions |
-| agent-context-poisoning-001 | RAG and Context Manipulation | defense_evasion | high | Detects context poisoning attacks with embedded malicious instructions |
-| agent-encoded-payload-001 | Encoded or Obfuscated Command Execution | defense_evasion | high | Detects base64-encoded payloads and obfuscated shell commands |
-| agent-env-manip-001 | Environment Variable Manipulation | defense_evasion | high | Detects PATH hijacking, LD_PRELOAD injection, environment tampering |
-| agent-mcp-config-manipulation-001 | MCP Configuration File Tampering | defense_evasion | critical | Detects unauthorized modifications to MCP configuration files |
-| agent-memory-poisoning-001 | SpAIware-Style Memory Manipulation | defense_evasion | critical | Detects SpAIware-style attacks manipulating AI agent memory |
-| agent-shell-config-001 | Shell Configuration Modification | defense_evasion | high | Detects malicious writes to shell startup files (.bashrc, .zshrc) |
-| openclaw-memory-poisoning-001 | OpenClaw Memory File Manipulation | defense_evasion | critical | Detects malicious modifications to OpenClaw workspace context files |
-| agent-dns-tunnel-001 | Potential DNS Tunneling or Encoded Data Transfer | discovery | medium | Detects DNS-based data exfiltration and tunneling patterns |
-| agent-network-recon-001 | Network Reconnaissance Activity | discovery | high | Detects network scanning and reconnaissance activities |
-| agent-rce-injection-001 | Remote Code Execution via Piped Script Download | execution | critical | Detects attempts to download and execute remote scripts |
-| openclaw-dangerous-exec-001 | OpenClaw Remote Code Execution via Piped Script Download | execution | critical | Detects OpenClaw tool calls downloading and executing remote scripts |
-| openclaw-session-spawn-abuse-001 | OpenClaw Suspicious Session Spawn Activity | execution | medium | Detects suspicious OpenClaw session spawning patterns |
-| agent-data-exfil-001 | Data Exfiltration via HTTP | exfiltration | critical | Detects data uploads to external URLs via HTTP POST/PUT |
-| agent-exfil-via-dns-001 | Enhanced DNS Exfiltration | exfiltration | high | Detects DNS-based data exfiltration and tunneling techniques |
-| agent-prompt-injection-exfil-001 | Markdown Image Exfiltration Pattern | exfiltration | critical | Detects data exfiltration via markdown image syntax with encoded URLs |
-| agent-steganographic-exfil-001 | Steganographic Data Hiding | exfiltration | high | Detects use of steganographic tools for covert data hiding |
-| openclaw-network-exfiltration-001 | OpenClaw Data Exfiltration via Network Upload | exfiltration | medium | Detects OpenClaw operations uploading data to external servers |
-| agent-untrusted-skill-install-001 | Untrusted Package or Skill Installation | initial_access | high | Detects installation of packages/skills from untrusted sources |
-| agent-lateral-movement-001 | Agent Lateral Movement and Pivoting | lateral_movement | critical | Detects lateral movement patterns where agents pivot to other systems |
-| agent-persistence-001 | Persistence Mechanism Installation | persistence | high | Detects attempts to establish persistence through various mechanisms |
-| agent-rules-file-backdoor-001 | Hidden Unicode in AI Rule Files | persistence | high | Detects hidden Unicode characters in AI assistant rule files |
-| openclaw-mcp-manipulation-001 | OpenClaw MCP Configuration Tampering | persistence | critical | Detects unauthorized modifications to OpenClaw MCP configurations |
-| agent-cloud-iam-escalation-001 | Cloud IAM Privilege Escalation | privilege_escalation | critical | Detects cloud IAM operations leading to privilege escalation |
-| agent-container-escape-001 | Container Escape Attempt | privilege_escalation | critical | Detects Docker/container escape techniques and attempts |
-| agent-privesc-001 | Privilege Escalation Attempt | privilege_escalation | high | Detects sudo usage, setuid changes, ownership modifications |
-| agent-sys-tamper-001 | System File Modification | privilege_escalation | critical | Detects writes to critical system directories and binaries |
-| agent-prompt-injection-direct-001 | Direct Prompt Injection Attempt | prompt_injection | critical | Detects direct prompt injection with jailbreak phrases |
-| agent-prompt-injection-indirect-001 | Indirect Prompt Injection in Retrieved Content | prompt_injection | high | Detects indirect prompt injection markers in retrieved content |
-| openclaw-prompt-injection-001 | OpenClaw Prompt Injection in Tool Outputs | prompt_injection | critical | Detects prompt injection attempts within OpenClaw tool responses |
-| agent-mcp-rug-pull-001 | MCP Tool Description Changes (Rug Pull) | tool_poisoning | medium | Detects changes in MCP tool descriptions between loads |
-| agent-mcp-tool-poisoning-001 | Suspicious MCP Tool Descriptions | tool_poisoning | high | Detects MCP tools with system-level instructions or manipulative content |
-
-## Usage with AgentShield Engine
-
-These rules are optimized for the AgentShield detection engine:
-
-```bash
-# Clone the rules repository
-git clone https://github.com/agentshield-ai/agentshield-rules.git
-
-# Use with AgentShield engine  
-agentshield serve -rules ./agentshield-rules/rules -port 8432
-
-# Validate rules
-agentshield rules validate -path ./agentshield-rules/rules
-
-# List loaded rules
-agentshield rules list
+```
+IF the log event is a user_input
+AND the message contains "ignore previous instructions"
+THEN raise a critical alert for prompt injection
 ```
 
-## Rule Format
+Because Sigma is a vendor-neutral standard, these rules work with any Sigma-compatible detection engine -- not just AgentShield. This means security teams can integrate them into their existing tooling without vendor lock-in.
 
-All rules follow the standard Sigma format with AI-specific enhancements:
+## What Threats Do These Rules Detect?
 
-```yaml
-title: Direct Prompt Injection Attempt
-id: agent-prompt-injection-direct-001
-status: production
-description: |
-  Detects direct prompt injection attempts in AI agent inputs containing
-  common jailbreak phrases and system override commands.
-author: AgentShield Team
-date: "2024-01-15"
-level: critical
-logsource:
-  product: ai_agent  
-  category: agent_events
-tags:
-  - attack.initial_access
-  - attack.t1190
-detection:
-  selection:
-    event_type: 'user_input'
-    message|contains:
-      - 'ignore previous instructions'
-      - 'you are now' 
-      - 'developer mode'
-  condition: selection
-falsepositives:
-  - Legitimate AI safety research
-  - Educational content about prompt injection
-```
+### Prompt Injection
 
-### Key Fields
+When someone tries to override an agent's instructions -- either directly (typing "ignore previous instructions") or indirectly (hiding instructions in documents the agent reads).
 
-- **title**: Human-readable rule name
-- **id**: Unique identifier following `[platform]-[tactic]-[description]-[number]` format  
-- **level**: Severity level (critical, high, medium, low)
-- **logsource**: Specifies AI agent log format
-- **detection**: Sigma detection logic with AI-specific field names
-- **tags**: MITRE ATT&CK technique mappings
+### Data Theft and Exfiltration
+
+When an agent is tricked into sending sensitive data to an attacker -- via HTTP uploads, DNS tunnelling, hidden markdown images, or steganographic techniques.
+
+### Tool Manipulation and Poisoning
+
+When malicious metadata is hidden in MCP tool descriptions, or tools change their behaviour after being trusted ("rug pull" attacks).
+
+### Credential Theft
+
+When an agent accesses sensitive files like SSH keys, API tokens, cloud credentials, or environment variables containing secrets.
+
+### Privilege Escalation
+
+When an agent tries to gain more access than intended -- via sudo, container escapes, cloud IAM manipulation, or system file tampering.
+
+### Persistence
+
+When an attacker tries to maintain long-term access -- through cron jobs, shell profile modifications, launch agents, or poisoning agent memory.
+
+### Remote Code Execution
+
+When an agent is tricked into downloading and running malicious scripts, establishing reverse shells, or executing obfuscated commands.
+
+### Reconnaissance
+
+When an agent performs network scanning or DNS enumeration to map out a target environment.
+
+### Configuration Tampering
+
+When an agent modifies security-sensitive configuration files to weaken defences -- auto-approve settings, MCP configs, or AI assistant rule files.
+
+### Supply Chain Attacks
+
+When packages or skills are installed from untrusted sources -- direct URLs, GitHub repos, or tarball archives.
 
 ## Directory Structure
 
 ```
 rules/
-├── collection/              # Data collection techniques (1 rule)
-├── credential_access/       # Credential theft and access (3 rules)  
-├── defense_evasion/         # Evasion and hiding techniques (8 rules)
-├── discovery/               # Information gathering (2 rules)
-├── execution/               # Code execution techniques (3 rules)
-├── exfiltration/            # Data exfiltration methods (5 rules)
-├── initial_access/          # Initial compromise vectors (1 rule)
-├── lateral_movement/        # Movement between systems (1 rule) 
-├── persistence/             # Maintaining access (3 rules)
-├── privilege_escalation/    # Escalating privileges (4 rules)
-├── prompt_injection/        # AI-specific prompt attacks (3 rules)
-└── tool_poisoning/          # AI tool manipulation (2 rules)
+└── ai_agent/
+    ├── ai_agent_prompt_injection_direct.yml
+    ├── ai_agent_credential_access.yml
+    ├── ai_agent_mcp_tool_poisoning.yml
+    └── ... (all rules in one flat directory)
 ```
 
-Each directory contains rules specific to that MITRE ATT&CK tactic, organized for easy navigation and management.
+Rules are organised by product (`ai_agent`) following [SigmaHQ](https://github.com/SigmaHQ/sigma) conventions. The specific threat category for each rule is captured in the rule's YAML metadata (via MITRE ATT&CK tags and the `logsource` fields), not the directory structure. This flat layout keeps the repository simple and avoids ambiguity when a rule spans multiple attack categories.
 
-## Known Limitations
+## How to Use These Rules
 
-**Sigmalite `not` Modifier Support**: 3 rules require the `not` modifier which is not yet supported in the sigmalite engine. These rules are marked as `experimental` and will be promoted to `production` status once sigmalite adds this functionality:
+### With AgentShield Engine
 
-- `agent-lateral-movement-001`: Agent Lateral Movement and Pivoting
-- `openclaw-memory-poisoning-001`: OpenClaw Memory File Manipulation  
-- `agent-context-poisoning-001`: RAG and Context Manipulation
+```bash
+# Clone the rules repository
+git clone https://github.com/agentshield-ai/sigma-ai.git
 
-These rules currently use alternative detection logic to work around this limitation.
+# Use with AgentShield engine
+agentshield serve -rules ./sigma-ai/rules -port 8432
 
-## Contributing New Rules
+# Validate rules
+agentshield rules validate -path ./sigma-ai/rules
+```
 
-We welcome contributions of new detection rules! Please follow these guidelines:
+### With General Sigma Tooling
 
-### Rule Development Process
+These rules follow the standard Sigma format and can be used with any Sigma-compatible tool:
 
-1. **Research the Attack**: Understand the attack technique and how it manifests in AI agent logs
-2. **Create Detection Logic**: Write Sigma detection rules following our format
-3. **Test Thoroughly**: Validate against both malicious and benign samples
-4. **Document False Positives**: Include known false positive scenarios  
-5. **Map to MITRE ATT&CK**: Add appropriate technique tags
+```bash
+# Validate with sigma-cli
+sigma check rules/
 
-### Naming Convention
+# Convert to other formats
+sigma convert -t <target> rules/ai_agent/
+```
 
-- **Rule ID**: `[platform]-[tactic]-[description]-[number]`
-  - Platform: `agent`, `openclaw`, `generic`
-  - Tactic: MITRE ATT&CK tactic (lowercase, underscore-separated)
-  - Description: Brief technique description (dash-separated)
-  - Number: 3-digit sequence starting from 001
+## Understanding a Rule
 
-- **File Name**: Same as rule ID with `.yml` extension
-- **Category Directory**: Place in appropriate MITRE ATT&CK tactic folder
+Below is a fully annotated example showing the anatomy of a Sigma rule. Every field is explained in plain English.
 
-### Quality Standards
+```yaml
+title: Direct Prompt Injection Attempt          # Human-readable name
+id: eddcdc94-698c-577f-900d-28b1b5491a80         # Unique identifier (UUID v5)
+related:                                         # Links to related rules
+  - id: agent-prompt-injection-direct-001        # Previous ID this replaces
+    type: obsoletes
+status: stable                                   # Maturity level (see below)
+description: |                                   # What this rule detects
+  Detects direct prompt injection attempts in AI agent inputs containing
+  common jailbreak phrases, system override commands, and policy manipulation
+  structures. These patterns indicate attempts to compromise agent behavior
+  through malicious instructions.
+references:                                      # Further reading
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+author: AgentShield                              # Who wrote this rule
+date: "2026-02-16"                               # When it was first written
+modified: "2026-02-24"                           # When it was last changed
+tags:                                            # MITRE ATT&CK mappings
+  - attack.initial_access
+  - attack.t1190
+logsource:                                       # What log format to expect
+  product: ai_agent
+  category: agent_events
+detection:                                       # The matching logic
+  selection_jailbreak_keywords:
+    event_type: user_input
+    message|contains:
+      - 'ignore previous instructions'
+      - 'developer mode'
+  condition: selection_jailbreak_keywords
+falsepositives:                                  # Known benign triggers
+  - Legitimate AI safety research
+level: critical                                  # Severity (critical/high/medium/low)
+```
 
-- **Accuracy**: Low false positive rate (<5% in testing)
-- **Performance**: Rules should execute in <10ms on average
-- **Coverage**: Should detect variations of the attack technique
-- **Documentation**: Clear description and false positive guidance
+Here is what each section does:
+
+- **title / id** -- A human-readable name and a globally unique identifier. The UUID ensures rules can be cross-referenced unambiguously across different systems.
+- **related** -- Links this rule to others it replaces, extends, or is similar to. Useful for tracking rule lineage as detection logic evolves.
+- **status** -- The maturity level of the rule (see [Rule Maturity Levels](#rule-maturity-levels) below).
+- **description** -- A prose explanation of what the rule detects and why it matters.
+- **references** -- Links to research papers, blog posts, or standards that informed the rule.
+- **author / date / modified** -- Provenance metadata: who wrote the rule and when.
+- **tags** -- Maps the detection to the [MITRE ATT&CK](https://attack.mitre.org/) framework, linking it to known adversary tactics and techniques.
+- **logsource** -- Tells the detection engine what type of log data this rule applies to. Here, `product: ai_agent` with `category: agent_events` means it targets AI agent event logs.
+- **detection** -- The core matching logic. Each `selection_*` block defines a set of conditions, and the `condition` field combines them using boolean logic (`and`, `or`, `not`).
+- **falsepositives** -- Documents realistic scenarios where the rule might fire on benign activity, helping analysts triage alerts.
+- **level** -- The severity of the alert: `critical`, `high`, `medium`, or `low`.
+
+## Rule Maturity Levels
+
+| Level | Meaning |
+|-------|---------|
+| **stable** | Uses only standard Sigma syntax. Detection logic is well-established and field-tested. Ready for production use. |
+| **test** | Detection logic is sound but uses custom extension fields (like `time_window` or `cross_plugin_data_flow`) that require the AgentShield engine. May need adaptation for other platforms. |
+| **experimental** | Heavily depends on non-standard fields or relies on workarounds for engine limitations. Expect changes as the detection engine evolves. |
+
+## Custom Extensions
+
+Some rules use fields beyond the standard Sigma specification. These fields require the AgentShield detection engine and are clearly marked with inline comments in each rule.
+
+### Temporal Correlation
+
+- `time_window` -- Time window for correlating sequential events (e.g. `'60s'`)
+- `time_between` -- Maximum time between two related events
+
+### Behavioural Analysis
+
+- `cross_plugin_data_flow` -- Detects data flowing between different plugins
+- `suspicious_data_pattern` -- Flags suspicious data patterns identified by the engine
+- `actual_behavior_matches_description` -- Verifies if a tool's actual behaviour matches its description
+
+### Content Analysis
+
+- `description_similarity_score` -- Similarity score between tool descriptions
+- `description_length_ratio` -- Ratio of new description length to original
+- `byte_size_to_visible_char_ratio` -- Detects hidden content via byte/character ratio mismatch
+- `visibility_analysis` -- Analyses content for hidden text
+
+### Network Analysis
+
+- `query_length` -- DNS query string length
+- `subdomain_count` -- Number of subdomains in a DNS query
+- `domain_entropy` -- Shannon entropy of domain names
+
+### Context Tracking
+
+- `destination_discovered_recently` -- Whether the target host was recently discovered
+- `sensitive_files` -- Whether the operation involves sensitive files
+- `parent_agent_context` -- The context of the parent agent
+- `hosts_count` -- Number of hosts involved in an operation
+- `credential_source` -- Origin of credentials being used
+
+### File Analysis
+
+- `size_increase_ratio` -- Ratio of file size change after modification
+
+Rules using these fields are marked as `test` or `experimental` status to indicate they need engine-specific support.
+
+## Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+1. **Research the attack** -- Understand how the attack manifests in AI agent logs
+2. **Follow the Sigma format** -- Use the field ordering shown in "Understanding a Rule"
+3. **Test thoroughly** -- Validate against both malicious and benign samples
+4. **Document false positives** -- Include realistic scenarios that could trigger the rule
+5. **Map to MITRE ATT&CK** -- Add appropriate technique tags
+6. **Choose appropriate status** -- Start with `test` or `experimental` for new rules
+
+### File Naming
+
+- Format: `ai_agent_<description>.yml`
+- Use lowercase with underscores
+- Place all rules in `rules/ai_agent/`
 
 ### Submission Process
 
 1. Fork this repository
-2. Create a feature branch (`git checkout -b feature/new-detection-rule`)
-3. Add your rule in the appropriate category directory
-4. Update this README if adding a new category
-5. Test your rule thoroughly
-6. Commit your changes with descriptive messages
-7. Push to your branch (`git push origin feature/new-detection-rule`)
-8. Open a Pull Request with rule description and test results
+2. Create a feature branch (`git checkout -b feat/new-detection-rule`)
+3. Add your rule following the conventions above
+4. Test and validate your rule
+5. Open a Pull Request with a description and test results
 
-## Testing Rules
+## Known Limitations
 
-### Local Testing
+- **Custom field support** -- Rules marked as `test` or `experimental` use custom extension fields that require the AgentShield detection engine. Standard Sigma tools will ignore these fields.
+- **`not` modifier** -- A small number of rules use the `not` modifier which may not be supported by all Sigma engines. These rules include alternative detection logic as a workaround.
+- **Temporal correlation** -- Rules that detect sequences of events (e.g. "web browse then execute") require an engine capable of stateful, temporal correlation.
+- **Behavioural verification** -- Some rules check whether a tool's actual behaviour matches its description. This requires runtime instrumentation beyond simple log matching.
 
-```bash
-# Validate rule syntax
-sigma check rules/
+## Licence
 
-# Test against sample logs
-sigma convert -t agentshield rules/prompt_injection/
-
-# Performance testing
-agentshield rules benchmark -path rules/
-```
-
-### Automated Testing
-
-The repository includes automated testing for:
-- Rule syntax validation
-- False positive rate testing  
-- Performance benchmarking
-- MITRE ATT&CK mapping validation
-
-## License
-
-Apache 2.0 - See [LICENSE](LICENSE) file for details.
+Apache 2.0 -- See [LICENSE](LICENSE) file for details.
 
 ## Related Projects
 
-- **[AgentShield](https://github.com/agentshield-ai/agentshield)** - Main project and OpenClaw plugin
-- **[AgentShield Engine](https://github.com/agentshield-ai/agentshield-engine)** - Go detection engine  
-- **[Sigma](https://github.com/SigmaHQ/sigma)** - Original Sigma project and specification
-
-## Acknowledgments
-
-- [Sigma Community](https://github.com/SigmaHQ/sigma) for the detection rule format
-- [MITRE ATT&CK](https://attack.mitre.org/) for the threat taxonomy
-- AI security researchers and the AgentShield community for rule contributions
+- **[AgentShield](https://github.com/agentshield-ai/agentshield)** -- Main project and OpenClaw plugin
+- **[AgentShield Engine](https://github.com/agentshield-ai/agentshield-engine)** -- Go detection engine
+- **[Sigma](https://github.com/SigmaHQ/sigma)** -- Original Sigma project and specification
+- **[MITRE ATT&CK](https://attack.mitre.org/)** -- Threat taxonomy used for rule tagging
+- **[OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)** -- LLM security risks
 
 ---
 
-**Comprehensive detection rules for AI agent security - keeping your agents safe from adversarial attacks.**
+**Detection rules for AI agent security -- keeping your agents safe from adversarial attacks.**

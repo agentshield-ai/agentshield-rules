@@ -1,0 +1,41 @@
+title: Encoded or Obfuscated Command Execution
+id: a935a04a-61b2-5b55-a608-407a2048949a
+related:
+  - id: agent-encoded-payload-001
+    type: obsoletes
+status: stable
+description: |
+  Detects base64-encoded payloads piped to shell execution, obfuscated
+  Python eval/exec, and other encoded command patterns that may indicate
+  an attempt to evade detection.
+references:
+  - https://attack.mitre.org/techniques/T1027/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-02-04"
+modified: "2026-02-24"
+tags:
+  - attack.defense_evasion
+  - attack.t1027
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_base64_pipe:
+    event_type: tool_call
+    command|contains:
+      - 'base64 -d'
+      - 'base64 --decode'
+  selection_python_exec:
+    event_type: tool_call
+    command|re: 'python[3]?\s+-c\s+.*(__import__|exec|eval|compile)\s*\('
+  selection_eval_echo:
+    event_type: tool_call
+    command|contains:
+      - 'eval $(echo'
+      - 'eval "$(echo'
+  condition: selection_base64_pipe or selection_python_exec or selection_eval_echo
+falsepositives:
+  - Legitimate build scripts using base64 encoding for binary data
+  - Development toolchains that compile and execute code snippets
+level: high

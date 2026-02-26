@@ -1,0 +1,56 @@
+title: Prompt Injection via File Write
+id: a0fc6a5a-7c68-5396-94d5-4096c8e5b013
+related:
+  - id: agent-write-prompt-injection-001
+    type: obsoletes
+status: stable
+description: |
+  Detects file write operations where the content contains prompt injection
+  patterns. Attackers can poison files that other agents or future sessions
+  will read, hijacking their behaviour.
+references:
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+  - https://attack.mitre.org/techniques/T1566/
+  - https://embracethered.com/blog/posts/2024/claude-computer-use-c2-the-spaiware/
+author: AgentShield
+date: "2026-02-17"
+modified: "2026-02-24"
+tags:
+  - attack.initial_access
+  - attack.t1566
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_ignore:
+    event_type: tool_call
+    content|contains:
+      - 'ignore previous instructions'
+      - 'ignore all previous'
+      - 'disregard previous'
+      - 'disregard all previous'
+      - 'forget your instructions'
+      - 'override your instructions'
+      - 'new instructions:'
+      - 'system prompt:'
+  selection_role_hijack:
+    event_type: tool_call
+    content|contains:
+      - 'you are now'
+      - 'act as if you are'
+      - 'pretend you are'
+      - 'from now on you'
+      - 'your new role is'
+  selection_exfil_instruction:
+    event_type: tool_call
+    content|contains:
+      - 'send the contents to'
+      - 'exfiltrate'
+      - 'upload this to'
+      - 'curl http'
+      - 'wget http'
+  condition: selection_ignore or selection_role_hijack or selection_exfil_instruction
+falsepositives:
+  - Security researchers writing test files containing prompt injection examples
+  - Documentation files that describe prompt injection patterns for educational purposes
+level: high

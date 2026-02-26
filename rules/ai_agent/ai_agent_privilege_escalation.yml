@@ -1,0 +1,42 @@
+title: Privilege Escalation Attempt
+id: ecc81ba6-4c08-5171-845b-e65daf432843
+related:
+  - id: agent-privesc-001
+    type: obsoletes
+status: stable
+description: |
+  Detects sudo usage, setuid changes, ownership changes to root,
+  and capability manipulation that may indicate privilege escalation.
+references:
+  - https://attack.mitre.org/techniques/T1548/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-02-04"
+modified: "2026-02-24"
+tags:
+  - attack.privilege_escalation
+  - attack.t1548
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_sudo:
+    event_type: tool_call
+    command|startswith: 'sudo '
+  selection_chmod_suid:
+    event_type: tool_call
+    command|contains:
+      - 'chmod u+s'
+      - 'chmod 4'
+      - 'chmod +s'
+  selection_chown_root:
+    event_type: tool_call
+    command|contains: 'chown root'
+  selection_capabilities:
+    event_type: tool_call
+    command|contains: 'setcap'
+  condition: selection_sudo or selection_chmod_suid or selection_chown_root or selection_capabilities
+falsepositives:
+  - Legitimate use of sudo for package installation or system configuration
+  - Build scripts that set file permissions as part of deployment
+level: high

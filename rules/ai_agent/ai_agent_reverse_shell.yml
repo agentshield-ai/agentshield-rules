@@ -1,0 +1,67 @@
+title: Reverse Shell Attempt
+id: 74dee137-ffb8-54c8-862f-4a98a61f63ee
+related:
+  - id: agent-reverse-shell-001
+    type: obsoletes
+status: stable
+description: |
+  Detects commands that establish reverse shells, allowing an attacker
+  to gain interactive remote access to the agent's host system.
+  Covers bash, python, perl, nc, and socat reverse shell patterns.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+  - https://attack.mitre.org/techniques/T1573/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-02-17"
+modified: "2026-02-24"
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.persistence
+  - attack.t1573
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_bash_tcp:
+    event_type: tool_call
+    command|contains:
+      - '/dev/tcp/'
+      - '/dev/udp/'
+      - 'bash -i >&'
+      - 'bash -i >& '
+  selection_netcat:
+    event_type: tool_call
+    command|contains:
+      - 'nc -e /bin'
+      - 'nc -e /usr'
+      - 'ncat -e /bin'
+      - 'nc -c /bin'
+      - 'nc -lvp'
+  selection_python:
+    event_type: tool_call
+    command|contains:
+      - 'import socket,subprocess'
+      - 'socket.socket(socket.AF_INET'
+      - 'subprocess.call(["/bin/sh"'
+      - 'pty.spawn("/bin'
+  selection_perl:
+    event_type: tool_call
+    command|contains:
+      - 'perl -e'
+      - 'IO::Socket::INET'
+  selection_socat:
+    event_type: tool_call
+    command|contains:
+      - 'socat exec:'
+      - 'socat TCP:'
+  selection_mkfifo:
+    event_type: tool_call
+    command|contains:
+      - 'mkfifo /tmp/'
+  condition: selection_bash_tcp or selection_netcat or selection_python or selection_perl or selection_socat or selection_mkfifo
+falsepositives:
+  - Legitimate network debugging scripts using netcat for connectivity testing
+  - Security training exercises involving controlled reverse shell demonstrations
+level: critical

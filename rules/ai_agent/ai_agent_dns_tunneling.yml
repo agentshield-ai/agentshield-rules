@@ -1,0 +1,45 @@
+title: Potential DNS Tunneling or Encoded Data Transfer
+id: bc7cb351-27ea-501d-b32f-daee393f1b35
+related:
+  - id: agent-dns-tunnel-001
+    type: obsoletes
+  - id: 18ccf235-86e0-57ad-9cf0-83fa81cffb09
+    type: similar
+status: stable
+description: |
+  Detects patterns that may indicate DNS-based data exfiltration including
+  TXT record lookups, unusually long subdomains, and hex-encoded data
+  piped to network tools.
+references:
+  - https://attack.mitre.org/techniques/T1048/
+  - https://atlas.mitre.org/techniques/AML.T0024
+author: AgentShield
+date: "2026-02-04"
+modified: "2026-02-24"
+tags:
+  - attack.exfiltration
+  - attack.t1048
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_dig_txt:
+    event_type: tool_call
+    command|contains:
+      - 'dig TXT'
+      - 'dig +short TXT'
+      - 'nslookup -type=TXT'
+  selection_long_subdomain:
+    event_type: tool_call
+    command|re: 'dig\s+[a-zA-Z0-9]{30,}\.'
+  selection_xxd_nc:
+    event_type: tool_call
+    command|contains:
+      - 'xxd'
+      - 'od -A x'
+  condition: selection_dig_txt or selection_long_subdomain or selection_xxd_nc
+falsepositives:
+  - Network administrators performing DNS diagnostics
+  - Security teams running authorised DNS audits
+  - Hex dump utilities used for legitimate binary file inspection
+level: medium

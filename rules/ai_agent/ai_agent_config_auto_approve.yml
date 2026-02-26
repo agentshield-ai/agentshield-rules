@@ -1,0 +1,71 @@
+title: Auto-Approve Configuration Changes
+id: 440a1431-0683-58c2-83b5-ccad310b764f
+related:
+  - id: agent-config-autoapprove-001
+    type: obsoletes
+status: stable
+description: |
+  Detects modifications to configuration files that enable automatic
+  approval of dangerous operations without user consent. These changes
+  can bypass security controls and enable privilege escalation attacks.
+references:
+  - https://attack.mitre.org/techniques/T1548/
+  - https://attack.mitre.org/techniques/T1112/
+  - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+author: AgentShield
+date: "2026-02-16"
+modified: "2026-02-24"
+tags:
+  - attack.privilege_escalation
+  - attack.t1548
+  - attack.defense_evasion
+  - attack.t1112
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_vscode_settings:
+    event_type: file_write
+    file_path|contains: '.vscode/settings.json'
+    content|contains: 'chat.tools.autoApprove'
+  selection_cursor_mcp:
+    event_type: file_write
+    file_path|contains: '.cursor/mcp.json'
+    content|contains:
+      - '"autoApprove"'
+      - '"skipConfirmation"'
+      - '"bypassApproval"'
+  selection_codex_config:
+    event_type: file_write
+    file_path|contains: '.codex/config.toml'
+    content|contains:
+      - 'mcp_servers'
+      - 'auto_approve'
+      - 'skip_confirmation'
+  selection_dangerous_auto_settings:
+    event_type: file_write
+    content|contains:
+      - '"autoExecute": true'
+      - '"allowDangerousOperations": true'
+      - '"disableSandbox": true'
+      - '"unrestricted": true'
+      - '"allowAll": true'
+  selection_security_bypass:
+    event_type: file_write
+    content|contains:
+      - '"security": "disabled"'
+      - '"safeMode": false'
+      - '"confirmations": false'
+      - '"warnings": false'
+  selection_shell_auto_approve:
+    event_type: file_write
+    content|contains:
+      - 'shell.autoApprove'
+      - 'terminal.autoApprove'
+      - 'exec.autoApprove'
+  condition: selection_vscode_settings or selection_cursor_mcp or selection_codex_config or selection_dangerous_auto_settings or selection_security_bypass or selection_shell_auto_approve
+falsepositives:
+  - Legitimate development environment configuration
+  - Testing scenarios requiring reduced security
+  - Authorised productivity optimisations
+level: critical

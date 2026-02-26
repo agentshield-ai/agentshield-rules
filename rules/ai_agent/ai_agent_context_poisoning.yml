@@ -1,0 +1,86 @@
+title: RAG and Context Manipulation
+id: 4e438202-0742-5a3b-9062-064fa4b2d6fc
+related:
+  - id: agent-context-poisoning-001
+    type: obsoletes
+status: experimental
+description: |
+  Detects context poisoning attacks where instructions are embedded in
+  retrieved documents or tool sequences suggest a confused deputy attack.
+  These patterns indicate attempts to manipulate agent behavior through
+  compromised external content or coordinated tool exploitation.
+references:
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/
+  - https://attack.mitre.org/techniques/T1562/
+  - https://attack.mitre.org/techniques/T1566/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-02-16"
+modified: "2026-02-24"
+tags:
+  - attack.defense_evasion
+  - attack.t1562
+  - attack.initial_access
+  - attack.t1566
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_embedded_instructions:
+    event_type: document_retrieval
+    content|contains:
+      - 'IGNORE PREVIOUS INSTRUCTIONS'
+      - 'NEW SYSTEM INSTRUCTIONS'
+      - 'OVERRIDE:'
+      - 'IMPORTANT: From now on'
+      - '---BEGIN INSTRUCTIONS---'
+      - '### SYSTEM MESSAGE'
+  selection_confused_deputy_sequence:
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'web_browse'
+      - 'send_email'
+    # Custom: requires AgentShield temporal correlation engine
+    time_window: '60s'
+  selection_browse_then_exec:
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'web_browse'
+      - 'exec'
+    # Custom: requires AgentShield temporal correlation engine
+    time_window: '120s'
+  selection_search_then_contact:
+    event_type: tool_sequence
+    tools_used|contains|all:
+      - 'web_search'
+      - 'send_message'
+    # Custom: requires AgentShield temporal correlation engine
+    time_window: '300s'
+  selection_retrieval_with_commands:
+    event_type: document_retrieval
+    content|contains:
+      - 'curl -X POST'
+      - 'wget -O'
+      - 'nc -e'
+      - 'bash -i'
+      - 'python -c'
+  selection_context_injection_markers:
+    event_type: document_retrieval
+    content|contains:
+      - '<context_injection>'
+      - '<!-- INJECT:'
+      - '{{SYSTEM_OVERRIDE}}'
+      - '[CONTEXT_POISON]'
+  selection_cross_plugin_exploit:
+    event_type: tool_sequence
+    # Custom: requires AgentShield cross-plugin analysis
+    cross_plugin_data_flow: true
+    # Custom: requires AgentShield pattern analysis engine
+    suspicious_data_pattern: true
+  condition: selection_embedded_instructions or selection_confused_deputy_sequence or selection_browse_then_exec or selection_search_then_contact or selection_retrieval_with_commands or selection_context_injection_markers or selection_cross_plugin_exploit
+falsepositives:
+  - Legitimate documentation containing system commands
+  - Normal workflows involving web browsing and communication
+  - Research activities involving multiple tools
+  - Educational content about system administration
+level: high

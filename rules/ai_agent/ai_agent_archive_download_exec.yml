@@ -1,0 +1,55 @@
+title: Archive Download and Execution via Shell Chaining
+id: b3501634-d992-5452-a4b5-163f1502c151
+related:
+  - id: agent-archive-download-exec-001
+    type: obsoletes
+status: stable
+description: |
+  Detects command patterns where a remote archive is downloaded (curl/wget),
+  extracted (tar/unzip), and then an embedded script is executed. This is
+  a common evasion of pipe-to-shell detection because the download, extract,
+  and execute steps are chained with && or ; rather than piped.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+  - https://attack.mitre.org/techniques/T1204/
+  - https://arxiv.org/abs/2403.04783
+author: AgentShield
+date: "2026-02-22"
+modified: "2026-02-24"
+tags:
+  - attack.execution
+  - attack.t1059
+  - attack.t1204
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  selection_curl_tar_exec:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - 'tar'
+    command|re: '(\./|install\.sh|setup\.sh|chmod \+x)'
+  selection_wget_tar_exec:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - 'tar'
+    command|re: '(\./|install\.sh|setup\.sh|chmod \+x)'
+  selection_curl_unzip_exec:
+    event_type: tool_call
+    command|contains|all:
+      - 'curl'
+      - 'unzip'
+    command|re: '(\./|install\.sh|setup\.sh|chmod \+x)'
+  selection_wget_unzip_exec:
+    event_type: tool_call
+    command|contains|all:
+      - 'wget'
+      - 'unzip'
+    command|re: '(\./|install\.sh|setup\.sh|chmod \+x)'
+  condition: selection_curl_tar_exec or selection_wget_tar_exec or selection_curl_unzip_exec or selection_wget_unzip_exec
+falsepositives:
+  - Legitimate build scripts that download and install dependencies from trusted sources
+  - Package managers that download and extract prebuilt binaries (e.g. GitHub Releases)
+level: critical

@@ -1,0 +1,71 @@
+title: Suspicious MCP Tool Descriptions
+id: 27eee8c9-af55-5190-8601-1e7b365afc99
+related:
+  - id: agent-mcp-tool-poisoning-001
+    type: obsoletes
+status: test
+description: |
+  Detects MCP tool descriptions containing system-level instructions,
+  ANSI escape sequences, or excessively long imperative instructions
+  that may indicate tool poisoning attacks designed to manipulate
+  agent behavior through malicious tool metadata.
+references:
+  - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+  - https://attack.mitre.org/techniques/T1546/
+  - https://attack.mitre.org/techniques/T1027/
+  - https://blog.trailofbits.com/2025/01/09/the-risks-of-mcp-and-ai-tool-ecosystems/
+author: AgentShield
+date: "2026-02-16"
+modified: "2026-02-24"
+tags:
+  - attack.persistence
+  - attack.t1546
+  - attack.defense_evasion
+  - attack.t1027
+logsource:
+  product: ai_agent
+  category: mcp_events
+detection:
+  selection_system_instructions:
+    event_type: tool_description
+    description|contains:
+      - '<IMPORTANT>'
+      - '<SYSTEM>'
+      - '{{SYSTEM:'
+      - '[SYSTEM]'
+      - 'OVERRIDE:'
+      - 'IGNORE PREVIOUS'
+      - 'NEW INSTRUCTIONS:'
+  # NOTE: Length-based filtering (description > 500 chars) requires engine-specific support.
+  # The selection_long_imperative block alone may produce false positives without length filtering.
+  selection_long_imperative:
+    event_type: tool_description
+    description|contains|all:
+      - 'ALWAYS'
+      - 'MUST'
+  selection_ansi_escape:
+    event_type: tool_description
+    description|contains:
+      - '\x1b['
+      - '\033['
+      - '\u001b['
+      - '\e['
+  selection_response_ansi:
+    event_type: tool_response
+    response|contains:
+      - '\x1b['
+      - '\033['
+      - '\u001b['
+      - '\e['
+  selection_hidden_instructions:
+    event_type: tool_description
+    description|contains:
+      - 'color: white'
+      - 'display: none'
+      - 'visibility: hidden'
+      - 'font-size: 0'
+  condition: selection_system_instructions or selection_long_imperative or selection_ansi_escape or selection_response_ansi or selection_hidden_instructions
+falsepositives:
+  - Legitimate tool descriptions with capitalised keywords for emphasis in documentation
+  - Terminal-based tools that include ANSI colour codes in their help text
+level: high
