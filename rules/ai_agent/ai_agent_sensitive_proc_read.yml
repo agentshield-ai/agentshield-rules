@@ -1,0 +1,53 @@
+title: Sensitive Proc Filesystem Read
+id: b8e2a4f1-7c93-5d1e-a6b4-3f9d0e8c5a72
+status: stable
+description: |
+  Detects read access to sensitive proc filesystem entries such as
+  /proc/self/environ, /proc/*/environ, /proc/self/maps, and similar.
+  Agents may use these to bypass command-level env enumeration blocks
+  by reading environment variables directly from procfs. This covers
+  both file-read tool calls (e.g. read tool) and command-based access
+  (e.g. cat /proc/self/environ).
+references:
+  - https://attack.mitre.org/techniques/T1552/001/
+  - https://attack.mitre.org/techniques/T1082/
+  - https://man7.org/linux/man-pages/man5/proc.5.html
+author: AgentShield
+date: "2026-03-02"
+modified: "2026-03-02"
+tags:
+  - attack.credential-access
+  - attack.t1552.001
+  - attack.discovery
+  - attack.t1082
+logsource:
+  product: ai_agent
+  category: agent_events
+detection:
+  # Read tool accessing /proc/*/environ (environment variables)
+  selection_read_proc_environ:
+    event_type: tool_call
+    command|contains: '/proc/'
+    command|endswith: '/environ'
+  # Read tool accessing other sensitive proc entries
+  selection_read_proc_sensitive:
+    event_type: tool_call
+    command|contains:
+      - '/proc/self/maps'
+      - '/proc/self/cmdline'
+      - '/proc/self/status'
+      - '/proc/self/mountinfo'
+      - '/proc/self/cgroup'
+  # Exec-based access to proc environ (cat, less, head, etc.)
+  selection_exec_proc_environ:
+    event_type: tool_call
+    command|re: '(cat|less|head|tail|strings|xxd|od|hexdump)\s+/proc/[^/]+/environ'
+  # Exec-based access to other sensitive proc files
+  selection_exec_proc_sensitive:
+    event_type: tool_call
+    command|re: '(cat|less|head|tail|strings)\s+/proc/self/(maps|cmdline|status|mountinfo|cgroup)'
+  condition: selection_read_proc_environ or selection_read_proc_sensitive or selection_exec_proc_environ or selection_exec_proc_sensitive
+falsepositives:
+  - Debugging tools that inspect process state
+  - Container health checks reading /proc/self/cgroup
+level: high
