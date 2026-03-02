@@ -116,7 +116,7 @@ status: stable                                   # Maturity level (see below)
 description: |                                   # What this rule detects
   Detects direct prompt injection attempts in AI agent inputs containing
   common jailbreak phrases, system override commands, and policy manipulation
-  structures. These patterns indicate attempts to compromise agent behavior
+  structures. These patterns indicate attempts to compromise agent behaviour
   through malicious instructions.
 references:                                      # Further reading
   - https://owasp.org/www-project-top-10-for-large-language-model-applications/
@@ -300,4 +300,4 @@ Apache 2.0 -- See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Detection rules for AI agent security -- keeping your agents safe from adversarial attacks.**
+**Detection rules for AI agent security -- helping to keep agents safe from adversarial attacks.**
