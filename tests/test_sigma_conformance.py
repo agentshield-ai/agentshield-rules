@@ -6,7 +6,6 @@ stable rules meet SigmaHQ's required/recommended field conventions.
 
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,6 +13,12 @@ from pathlib import Path
 import pytest
 
 from conftest import RULES_DIR
+from training.sigma_constants import (
+    REQUIRED_STABLE_FIELDS,
+    TECHNIQUE_RE,
+    UNDERSCORE_TACTIC_RE,
+    extract_condition_names,
+)
 
 # ---------------------------------------------------------------------------
 # Test 1: sigma check strict mode
@@ -41,19 +46,6 @@ def test_all_rules_pass_sigma_check() -> None:
 # ---------------------------------------------------------------------------
 # Test 2: required fields for stable rules
 # ---------------------------------------------------------------------------
-
-REQUIRED_STABLE_FIELDS = {
-    "title",
-    "id",
-    "status",
-    "description",
-    "author",
-    "date",
-    "logsource",
-    "detection",
-    "level",
-    "falsepositives",
-}
 
 
 def test_stable_rules_have_required_fields(
@@ -93,23 +85,6 @@ def test_stable_rules_have_references(
 # Test 4: condition ↔ detection key cross-reference
 # ---------------------------------------------------------------------------
 
-# Matches bare identifiers in a Sigma condition (selection names / filter names).
-# Excludes keywords: and, or, not, all, 1/any of them, of, them.
-_SIGMA_KEYWORDS = frozenset(
-    {"and", "or", "not", "all", "of", "them", "1", "none"}
-)
-_IDENT_RE = re.compile(r"\b([a-zA-Z_][a-zA-Z0-9_]*(?:\*)?)")
-
-
-def _extract_condition_names(condition: str) -> set[str]:
-    """Extract selection/filter identifiers from a Sigma condition string.
-
-    Handles wildcard patterns like ``selection_*`` used in
-    ``1 of selection_*`` expressions.
-    """
-    tokens = _IDENT_RE.findall(condition)
-    return {t for t in tokens if t.lower() not in _SIGMA_KEYWORDS}
-
 
 def test_detection_condition_references_exist(
     parsed_rules: list[tuple[Path, dict]],
@@ -121,12 +96,12 @@ def test_detection_condition_references_exist(
         condition = detection.get("condition", "")
         cond_names: set[str]
         if isinstance(condition, str):
-            cond_names = _extract_condition_names(condition)
+            cond_names = extract_condition_names(condition)
         else:
             # Multi-line condition (list) — combine
             cond_names = set()
             for line in condition:
-                cond_names |= _extract_condition_names(str(line))
+                cond_names |= extract_condition_names(str(line))
 
         detection_keys = {k for k in detection if k != "condition"}
         # Handle wildcard references like "selection_*" via "… of selection_*"
@@ -177,9 +152,6 @@ def test_rule_ids_are_unique(
 # Test 6: no underscore tactic tags (regression guard)
 # ---------------------------------------------------------------------------
 
-_UNDERSCORE_TACTIC_RE = re.compile(r"^attack\.\w+_\w+$")
-
-
 def test_no_underscore_tactic_tags(
     parsed_rules: list[tuple[Path, dict]],
 ) -> None:
@@ -189,9 +161,7 @@ def test_no_underscore_tactic_tags(
         tags = data.get("tags", [])
         for tag in tags:
             # Only flag tactic-level tags (not technique IDs like attack.t1234)
-            if _UNDERSCORE_TACTIC_RE.match(tag) and not re.match(
-                r"^attack\.t\d+", tag, re.IGNORECASE
-            ):
+            if UNDERSCORE_TACTIC_RE.match(tag) and not TECHNIQUE_RE.match(tag):
                 failures.append(f"{path.name}: tag '{tag}' uses underscores")
 
     assert not failures, (

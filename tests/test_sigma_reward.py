@@ -7,9 +7,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from conftest import RULES_DIR
 from training.sigma_reward import score_batch, score_rule
-
-RULES_DIR = Path(__file__).resolve().parent.parent / "rules" / "ai_agent"
 
 # ---------------------------------------------------------------------------
 # Fixtures
